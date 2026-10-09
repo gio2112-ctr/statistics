@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,32 +7,1142 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <title>Pippo</title>
+    <title>HW 1 — Private key to public key</title>
     <style>
-      .accordion {
-        --bs-accordion-btn-bg: var(--bs-secondary-bg-subtle);
-        --bs-accordion-active-color: var(--bs-secondary-text-emphasis);
-        --bs-accordion-active-bg: var(--bs-secondary-bg-subtle);
-        --bs-accordion-btn-focus-box-shadow: 0 0 0 0.25rem
-          var(--bs-primary-border-subtle);
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
-      .accordion-body {
-        background-color: var(--bs-light-bg-subtle);
+      .viz-svg text {
+        font-family: system-ui, sans-serif;
+      }
+      canvas.scatter {
+        width: 100%;
+        height: auto;
+        background: #fff;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+      }
+      .chart-box {
+        background: #fff;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
       }
     </style>
   </head>
   <body class="bg-body-secondary">
-    <div class="container-xl">
-      <h1 class="display-1">Puppa</h1>
-      <blockquote class="blockquote">
-        <p>E qui un sottotitolo.</p>
-      </blockquote>
+    <div class="container-xl py-4">
+      <a href="../index.html" class="link-secondary link-opacity-75"
+        >← Back to the homework list</a
+      >
+
+      <header class="mt-3 mb-4">
+        <p
+          class="text-uppercase text-secondary fw-semibold small mb-1"
+          style="letter-spacing: 0.08em"
+        >
+          HW 1 · Statistics · A.Y. 2026/2027
+        </p>
+        <h1 class="display-5">Example App: Public-Key Cryptography</h1>
+        <p class="lead">PRIVATE KEY → PUBLIC KEY in Ethereum</p>
+      </header>
+
+      <noscript>
+        <div class="alert alert-warning">
+          This page needs JavaScript to run the experiments.
+        </div>
+      </noscript>
+
+      <!-- ===================== NOTES ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Notes</div>
+        <div class="card-body">
+          <p>
+            Elliptic-curve scalar multiplication can be viewed as a one-way
+            function: the forward direction is deterministic and cheap
+            (private key <span class="mono">k</span> → public key
+            <span class="mono">Q = kG</span>), while recovering
+            <span class="mono">k</span> from <span class="mono">Q</span> is the
+            Elliptic Curve Discrete Logarithm Problem (ECDLP). It shares some
+            traits with cryptographic hash functions, but it is not a hash: it
+            is used for public-key cryptography and digital signatures.
+          </p>
+          <p class="mb-0">
+            Ethereum uses the curve <span class="mono">secp256k1</span>,
+            <span class="mono">y² = x³ + 7</span> over a 256-bit prime field.
+            The goal here is to understand the idea, not to build a real
+            cryptosystem, so everything below runs on the toy curve
+            <span class="mono">y² = x³ + 7 (mod 17)</span> with base point
+            <span class="mono">G = (1, 5)</span> and private key
+            <span class="mono">k = 6</span>. All parameters can be changed in
+            the controls.
+          </p>
+        </div>
+      </section>
+
+      <!-- ===================== PART 1 ===================== -->
+      <section class="card mb-4" id="part1">
+        <div class="card-header fw-semibold">
+          1 · Toy public key: Q = kG
+        </div>
+        <div class="card-body">
+          <p>
+            Points are added with the chord-and-tangent rule over the field
+            <span class="mono">F₁₇</span>. For
+            <span class="mono">P = (x₁, y₁)</span> and
+            <span class="mono">Q = (x₂, y₂)</span>: the slope is
+            <span class="mono">λ = (y₂ − y₁)/(x₂ − x₁)</span> when
+            <span class="mono">P ≠ Q</span>, or
+            <span class="mono">λ = 3x₁²/(2y₁)</span> when
+            <span class="mono">P = Q</span> (the curve has
+            <span class="mono">a = 0</span>); then
+            <span class="mono">x₃ = λ² − x₁ − x₂</span> and
+            <span class="mono">y₃ = λ(x₁ − x₃) − y₁</span>, everything mod 17.
+            Two points with the same <span class="mono">x</span> and opposite
+            <span class="mono">y</span> add up to the point at infinity
+            <span class="mono">O</span>.
+          </p>
+
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-sm-4 col-md-3">
+              <label for="gSel" class="form-label">Base point G</label>
+              <select id="gSel" class="form-select"></select>
+            </div>
+            <div class="col-sm-4 col-md-3">
+              <label for="kIn" class="form-label">Private key k</label>
+              <input
+                id="kIn"
+                type="number"
+                min="1"
+                max="1000000"
+                step="1"
+                value="6"
+                class="form-control"
+              />
+            </div>
+            <div class="col-sm-4 col-md-6">
+              <div id="gInfo" class="small text-secondary"></div>
+            </div>
+          </div>
+          <div id="kError" class="text-danger small mb-2" role="alert"></div>
+
+          <div
+            id="pubkey"
+            class="border border-2 rounded bg-white p-3 mb-3"
+          ></div>
+
+          <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active"
+                data-bs-toggle="tab"
+                data-bs-target="#tabInc"
+                type="button"
+                role="tab"
+                aria-controls="tabInc"
+                aria-selected="true"
+              >
+                G, 2G, 3G, …, kG
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                data-bs-toggle="tab"
+                data-bs-target="#tabDbl"
+                type="button"
+                role="tab"
+                aria-controls="tabDbl"
+                aria-selected="false"
+              >
+                Faster: double-and-add
+              </button>
+            </li>
+          </ul>
+          <div class="tab-content border border-top-0 rounded-bottom bg-white p-3">
+            <div class="tab-pane fade show active" id="tabInc" role="tabpanel"></div>
+            <div class="tab-pane fade" id="tabDbl" role="tabpanel"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PART 2 ===================== -->
+      <section class="card mb-4" id="part2">
+        <div class="card-header fw-semibold">
+          2 · Slowed-down visual representation
+        </div>
+        <div class="card-body">
+          <p>
+            Every dot is a point of the curve over
+            <span class="mono">F₁₇</span> (17 affine points, plus
+            <span class="mono">O</span> which cannot be drawn). Use the same
+            <span class="mono">G</span> and <span class="mono">k</span> chosen
+            above. The dashed segment joins the two operands of the current
+            step; it is only a visual cue, because over a finite field there
+            is no geometric chord.
+          </p>
+
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-sm-6 col-md-4">
+              <label for="modeSel" class="form-label">Algorithm</label>
+              <select id="modeSel" class="form-select">
+                <option value="inc">Incremental: G, 2G, 3G, …</option>
+                <option value="dbl">Double-and-add</option>
+              </select>
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <label for="speed" class="form-label"
+                >Delay per step:
+                <span id="speedVal" class="mono">1200</span> ms</label
+              >
+              <input
+                id="speed"
+                type="range"
+                min="200"
+                max="2500"
+                step="100"
+                value="1200"
+                class="form-range"
+              />
+            </div>
+            <div class="col-md-4">
+              <div class="btn-group" role="group" aria-label="Animation controls">
+                <button id="bReset" type="button" class="btn btn-outline-secondary">⏮</button>
+                <button id="bPrev" type="button" class="btn btn-outline-secondary">◀</button>
+                <button id="bPlay" type="button" class="btn btn-secondary">▶ Play</button>
+                <button id="bNext" type="button" class="btn btn-outline-secondary">▶|</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <div class="chart-box">
+                <svg
+                  id="vizSvg"
+                  class="viz-svg w-100"
+                  role="img"
+                  aria-label="Points of the curve y squared equals x cubed plus 7 modulo 17"
+                ></svg>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div
+                id="vizCaption"
+                class="bg-white border rounded p-3 mono small"
+                style="min-height: 12rem"
+                aria-live="polite"
+              ></div>
+              <p class="small text-secondary mt-2 mb-0">
+                <span style="color: #198754">●</span> G &nbsp;
+                <span style="color: #0d6efd">●</span> computed multiples &nbsp;
+                <span style="color: #dc3545">●</span> current result &nbsp;
+                <span style="color: #fd7e14">○</span> operands of the step
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PART 3 ===================== -->
+      <section class="card mb-4" id="part3">
+        <div class="card-header fw-semibold">3 · Statistical exploration</div>
+        <div class="card-body">
+          <p>
+            For a chosen curve <span class="mono">y² = x³ + 7 (mod p)</span>
+            and base point <span class="mono">G</span> of order
+            <span class="mono">n</span>, the experiment computes
+            <em>all</em> the outputs <span class="mono">kG</span> for
+            <span class="mono">k = 1 … n−1</span> and measures the properties
+            listed in the assignment. Random choices (avalanche and
+            homomorphism tests) use a seeded generator, so a run can be
+            repeated exactly.
+          </p>
+
+          <h2 class="h6">Summary across curves</h2>
+          <div class="table-responsive mb-4">
+            <table class="table table-sm table-striped mono small mb-1" id="summaryTable">
+              <thead>
+                <tr>
+                  <th>p</th>
+                  <th>#E</th>
+                  <th>ord(G)</th>
+                  <th>χ²/df x</th>
+                  <th>χ²/df y</th>
+                  <th>r(k,x)</th>
+                  <th>r(k,y)</th>
+                  <th>avalanche</th>
+                  <th>(k₁+k₂)G test</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <p class="small text-secondary mb-0">
+              † fewer than 5 expected samples per bin: χ² is not reliable.
+              Avalanche = mean fraction of output bits (x‖y) flipped by
+              flipping one bit of k.
+            </p>
+          </div>
+
+          <h2 class="h6">Detailed run</h2>
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-6 col-md-3">
+              <label for="curveSel" class="form-label">Prime p</label>
+              <select id="curveSel" class="form-select">
+                <option value="17">17 (the toy curve)</option>
+                <option value="97">97</option>
+                <option value="1009">1009</option>
+                <option value="10009" selected>10009</option>
+                <option value="65521">65521</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="xBase" class="form-label">Base point x (empty = auto)</label>
+              <input id="xBase" type="number" min="0" step="1" class="form-control" placeholder="auto" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="seed" class="form-label">Random seed</label>
+              <input id="seed" type="number" min="0" step="1" value="1" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3">
+              <button id="runStats" type="button" class="btn btn-secondary w-100">Run</button>
+            </div>
+          </div>
+          <div id="statsError" class="text-danger small mb-2" role="alert"></div>
+          <div id="statsOut"></div>
+        </div>
+      </section>
+
+      <!-- ===================== DISCUSSION ===================== -->
+      <section class="card mb-4" id="discussion">
+        <div class="card-header fw-semibold">4 · Discussion</div>
+        <div class="card-body">
+          <p>
+            <strong>What the experiment can and cannot show.</strong> Statistics
+            probes the <em>structure</em> of the outputs. It cannot show that
+            inverting <span class="mono">k ↦ kG</span> is hard: on the toy
+            curve there are at most 18 candidates for
+            <span class="mono">k</span>, and even for
+            <span class="mono">p = 65521</span> a brute-force search is
+            immediate. The hardness of the ECDLP is an assumption that only
+            holds at cryptographic sizes (about 2²⁵⁶ points on secp256k1).
+            Also note that <span class="mono">p = 17</span> satisfies
+            <span class="mono">p ≡ 2 (mod 3)</span>, which makes
+            <span class="mono">y² = x³ + 7</span> a supersingular curve with
+            <span class="mono">p + 1</span> points, a case that real
+            parameters avoid (secp256k1 has <span class="mono">p ≡ 1 (mod 3)</span>
+            and a prime group order).
+          </p>
+
+          <p><strong>Properties meaningful for a one-way function.</strong></p>
+          <ul>
+            <li>
+              Determinism and an efficient forward computation:
+              double-and-add needs about <span class="mono">log₂ k</span> group
+              operations instead of <span class="mono">k − 1</span>.
+            </li>
+            <li>
+              Injectivity on <span class="mono">k = 1 … n−1</span>: the
+              frequency check shows each point exactly once. If
+              <span class="mono">k</span> is uniform, so is the public key
+              over the subgroup, which is what key generation needs (no
+              preferred keys).
+            </li>
+            <li>
+              Hardness of inversion (preimage resistance), which is a
+              computational property and is not measured by any of the tests
+              above.
+            </li>
+          </ul>
+
+          <p><strong>Properties tied to cryptographic hash functions.</strong></p>
+          <ul>
+            <li>
+              <em>Uniform output bits and avalanche.</em> A hash is designed so
+              that its output looks like a random bit string and a one-bit
+              change in the input flips about half of the output bits. An
+              elliptic-curve point is not a random bit string: it satisfies the
+              curve equation, so roughly half of the possible
+              <span class="mono">x</span> values never occur and the
+              high-order bits of <span class="mono">x</span> and
+              <span class="mono">y</span> are biased because the values are
+              smaller than <span class="mono">p</span> (visible in the bit
+              charts, strongly for small <span class="mono">p</span>). The
+              avalanche figure is measured only to compare; the function was
+              not designed for it.
+            </li>
+            <li>
+              <em>Algebraic structure.</em> Scalar multiplication satisfies
+              <span class="mono">(k₁+k₂)G = k₁G + k₂G</span>, as the last test
+              confirms. Consequently
+              <span class="mono">Q(k+1) = Q(k) + G</span> is easy to compute
+              from public data, so outputs of neighbouring inputs are
+              related. A hash function must have no such relation.
+            </li>
+            <li>
+              <em>Compression and collision resistance.</em> A hash maps
+              arbitrary-length inputs to a fixed size, so collisions exist and
+              must be hard to find. Here the map is a bijection between
+              <span class="mono">k mod n</span> and the subgroup: it does not
+              compress, so collisions in the hash sense do not arise.
+            </li>
+            <li>
+              <em>Correlation between input and output.</em> A correlation
+              close to 0 between <span class="mono">k</span> and the
+              coordinates is a weak sanity check (it only detects linear
+              dependence). It does not contradict the strong algebraic
+              relation above.
+            </li>
+          </ul>
+
+          <p class="mb-0">
+            Ethereum combines both tools: the public key
+            <span class="mono">(x‖y)</span> is obtained by scalar
+            multiplication, and the address is then taken from the last 20
+            bytes of the Keccak-256 hash of that public key. The hash adds the
+            output uniformity and avalanche behaviour that the curve point
+            lacks.
+          </p>
+        </div>
+      </section>
     </div>
-    <div class="container-xl mt-4"></div>
+
+    <footer class="py-3 my-4">
+      <p class="text-center text-body-secondary">© 2026 Giorgio N.</p>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        /* ============================================================
+           Finite-field and elliptic-curve helpers (curve y² = x³ + 7)
+           Points are [x, y]; the point at infinity O is null.
+           ============================================================ */
+        function mod(a, p) {
+          var r = a % p;
+          return r < 0 ? r + p : r;
+        }
+
+        function inv(a, p) {
+          var r0 = mod(a, p),
+            r1 = p,
+            s0 = 1,
+            s1 = 0;
+          while (r1 !== 0) {
+            var q = Math.floor(r0 / r1);
+            var t = r0 - q * r1;
+            r0 = r1;
+            r1 = t;
+            t = s0 - q * s1;
+            s0 = s1;
+            s1 = t;
+          }
+          if (r0 !== 1) throw new Error("not invertible");
+          return mod(s0, p);
+        }
+
+        function addPts(P, Q, p) {
+          if (!P) return { R: Q, lam: null, kind: "identity" };
+          if (!Q) return { R: P, lam: null, kind: "identity" };
+          var x1 = P[0], y1 = P[1], x2 = Q[0], y2 = Q[1];
+          if (x1 === x2 && mod(y1 + y2, p) === 0)
+            return { R: null, lam: null, kind: "inverse" };
+          var lam, kind;
+          if (x1 === x2 && y1 === y2) {
+            lam = mod(mod(3 * x1 * x1, p) * inv(2 * y1, p), p);
+            kind = "double";
+          } else {
+            lam = mod(mod(y2 - y1, p) * inv(x2 - x1, p), p);
+            kind = "add";
+          }
+          var x3 = mod(lam * lam - x1 - x2, p);
+          var y3 = mod(lam * (x1 - x3) - y1, p);
+          return { R: [x3, y3], lam: lam, kind: kind };
+        }
+
+        function fp(P) {
+          return P ? "(" + P[0] + ", " + P[1] + ")" : "O";
+        }
+
+        /* Naive method: G, 2G, 3G, ... (records at most `cap` steps) */
+        function incremental(k, G, p, cap) {
+          var steps = [], P = G, upto = Math.min(k, cap);
+          for (var m = 2; m <= upto; m++) {
+            var a = addPts(P, G, p);
+            steps.push({ kind: a.kind, A: P, B: G, lam: a.lam, R: a.R, mult: m });
+            P = a.R;
+          }
+          return { R: P, steps: steps, truncated: k > cap };
+        }
+
+        /* Faster method: scan the bits of k from the most significant one */
+        function dblAndAdd(k, G, p) {
+          var bits = k.toString(2), steps = [], R = G, m = 1;
+          for (var i = 1; i < bits.length; i++) {
+            var d = addPts(R, R, p);
+            steps.push({ kind: d.kind, A: R, B: R, lam: d.lam, R: d.R, mult: m * 2, bit: bits[i] });
+            R = d.R;
+            m *= 2;
+            if (bits[i] === "1") {
+              var a = addPts(R, G, p);
+              steps.push({ kind: a.kind, A: R, B: G, lam: a.lam, R: a.R, mult: m + 1, bit: bits[i] });
+              R = a.R;
+              m += 1;
+            }
+          }
+          return { R: R, steps: steps, bits: bits };
+        }
+
+        function formulaOf(s, p) {
+          var A = s.A, B = s.B;
+          if (s.kind === "double")
+            return "λ = 3·" + A[0] + "² / (2·" + A[1] + ") ≡ " + s.lam + " (mod " + p + ")";
+          if (s.kind === "add")
+            return "λ = (" + B[1] + " − " + A[1] + ") / (" + B[0] + " − " + A[0] + ") ≡ " + s.lam + " (mod " + p + ")";
+          if (s.kind === "inverse")
+            return "same x, opposite y: P + (−P) = O";
+          return "O is the neutral element";
+        }
+
+        function coordsOf(s, p) {
+          if ((s.kind !== "add" && s.kind !== "double") || !s.R) return "";
+          var A = s.A, B = s.B;
+          return (
+            "x₃ = λ² − " + A[0] + " − " + B[0] + " ≡ " + s.R[0] +
+            ",  y₃ = λ·(" + A[0] + " − " + s.R[0] + ") − " + A[1] + " ≡ " + s.R[1]
+          );
+        }
+
+        function opLabel(s) {
+          if (s.kind === "double") return "double";
+          if (s.kind === "add") return "add";
+          if (s.kind === "inverse") return "P + (−P)";
+          return "O + G";
+        }
+
+        /* ============================================================
+           Part 1 — toy curve p = 17, tables
+           ============================================================ */
+        var P17 = 17;
+        var pts17 = [];
+        for (var gx = 0; gx < P17; gx++)
+          for (var gy = 0; gy < P17; gy++)
+            if (mod(gy * gy - (gx * gx * gx + 7), P17) === 0) pts17.push([gx, gy]);
+
+        function orderOf17(G) {
+          var P = G, k = 1;
+          for (;;) {
+            var r = addPts(P, G, P17).R;
+            k++;
+            if (r === null) return k;
+            P = r;
+          }
+        }
+
+        var gSel = document.getElementById("gSel");
+        pts17.forEach(function (pt, i) {
+          var o = document.createElement("option");
+          o.value = String(i);
+          o.textContent = "(" + pt[0] + ", " + pt[1] + ")";
+          if (pt[0] === 1 && pt[1] === 5) o.selected = true;
+          gSel.appendChild(o);
+        });
+
+        var kIn = document.getElementById("kIn");
+        var cur = { G: [1, 5], k: 6 };
+
+        function renderPart1() {
+          var G = cur.G, k = cur.k, p = P17;
+          var ord = orderOf17(G);
+          document.getElementById("gInfo").textContent =
+            "G = " + fp(G) + " satisfies y² ≡ x³ + 7 (mod 17); ord(G) = " + ord +
+            ", so kG repeats with period " + ord + " and " + ord + "G = O.";
+
+          var inc = incremental(k, G, p, 64);
+          var dbl = dblAndAdd(k, G, p);
+          var Q = dbl.R;
+          var fullInc = k <= 64 ? inc.R : null;
+          var agree = k > 64 ? null : (fp(inc.R) === fp(Q));
+
+          var pk = document.getElementById("pubkey");
+          pk.innerHTML =
+            '<div class="small text-secondary text-uppercase fw-semibold">Toy public key</div>' +
+            '<div class="fs-4 mono">Q = ' + k + "G = " + fp(Q) + "</div>" +
+            '<div class="small text-secondary">k = ' + k + " is the private key; G = " + fp(G) +
+            (k % ord === 0 ? "; k is a multiple of ord(G), so the result is the point at infinity O" : "") +
+            (agree === null
+              ? ""
+              : agree
+              ? ". Both methods give the same point ✓"
+              : ". WARNING: the two methods disagree") +
+            ".</div>";
+
+          var rows = '<tr><td class="text-end">1</td><td>G</td><td>—</td><td>' + fp(G) + "</td></tr>";
+          inc.steps.forEach(function (s) {
+            rows +=
+              '<tr><td class="text-end">' + s.mult + "</td><td>" +
+              (s.mult - 1 === 1 ? "G" : (s.mult - 1) + "G") + " + G (" + opLabel(s) + ")</td><td>" +
+              (s.lam === null ? "—" : s.lam) + "</td><td>" + fp(s.R) + "</td></tr>";
+          });
+          document.getElementById("tabInc").innerHTML =
+            '<div class="table-responsive"><table class="table table-sm table-striped mono small mb-2">' +
+            "<thead><tr><th class=\"text-end\">m</th><th>operation</th><th>λ</th><th>mG</th></tr></thead><tbody>" +
+            rows + "</tbody></table></div>" +
+            '<p class="small text-secondary mb-0">' +
+            (inc.truncated ? "Only the first 64 rows are shown (the result above uses double-and-add). " : "") +
+            "k − 1 = " + (k - 1) + " group operations.</p>";
+
+          var rows2 = "";
+          dbl.steps.forEach(function (s, i) {
+            rows2 +=
+              "<tr><td class=\"text-end\">" + (i + 1) + "</td><td>bit " + s.bit + ": " + opLabel(s) + "</td><td>" +
+              fp(s.A) + (s.kind === "add" ? " + " + fp(s.B) : " × 2") + "</td><td>" +
+              (s.lam === null ? "—" : s.lam) + "</td><td>" + s.mult + "G = " + fp(s.R) + "</td></tr>";
+          });
+          document.getElementById("tabDbl").innerHTML =
+            '<p class="small mb-2">k = ' + k + " in binary is <span class=\"mono\">" + dbl.bits +
+            "</span>. Start from R = G (leading bit); for every following bit, double R, and add G if the bit is 1.</p>" +
+            (dbl.steps.length
+              ? '<div class="table-responsive"><table class="table table-sm table-striped mono small mb-2">' +
+                "<thead><tr><th class=\"text-end\">step</th><th>operation</th><th>operands</th><th>λ</th><th>result</th></tr></thead><tbody>" +
+                rows2 + "</tbody></table></div>"
+              : '<p class="mono small">k = 1: nothing to compute, Q = G.</p>') +
+            '<p class="small text-secondary mb-0">' + dbl.steps.length + " group operations instead of " + (k - 1) +
+            " (about log₂ k doubling steps plus one addition per 1-bit). For a 256-bit key this is at most ~512 operations instead of ~2²⁵⁶.</p>";
+        }
+
+        function readInputs() {
+          var err = document.getElementById("kError");
+          var k = Number(kIn.value);
+          if (!Number.isInteger(k) || k < 1 || k > 1000000) {
+            err.textContent = "k must be an integer between 1 and 1000000.";
+            return false;
+          }
+          err.textContent = "";
+          cur.k = k;
+          cur.G = pts17[Number(gSel.value)];
+          return true;
+        }
+
+        /* ============================================================
+           Part 2 — animation on the p = 17 grid
+           ============================================================ */
+        var svg = document.getElementById("vizSvg");
+        var caption = document.getElementById("vizCaption");
+        var anim = { steps: [], idx: 0, timer: null, mode: "inc", G: null, k: 0 };
+        var C = 26, ML = 34, MT = 14;
+        var VW = ML + P17 * C + 10, VH = MT + P17 * C + 30;
+        svg.setAttribute("viewBox", "0 0 " + VW + " " + VH);
+
+        function cx(x) { return ML + x * C + C / 2; }
+        function cy(y) { return MT + (P17 - 1 - y) * C + C / 2; }
+
+        function buildAnim() {
+          anim.G = cur.G;
+          anim.k = cur.k;
+          anim.mode = document.getElementById("modeSel").value;
+          anim.steps =
+            anim.mode === "inc"
+              ? incremental(cur.k, cur.G, P17, 200).steps
+              : dblAndAdd(cur.k, cur.G, P17).steps;
+          anim.idx = 0;
+          stopPlay();
+          drawViz();
+        }
+
+        function drawViz() {
+          var s = "";
+          var i, j;
+          for (i = 0; i <= P17; i++) {
+            s += '<line x1="' + (ML + i * C) + '" y1="' + MT + '" x2="' + (ML + i * C) + '" y2="' + (MT + P17 * C) + '" stroke="#dee2e6" stroke-width="1"/>';
+            s += '<line x1="' + ML + '" y1="' + (MT + i * C) + '" x2="' + (ML + P17 * C) + '" y2="' + (MT + i * C) + '" stroke="#dee2e6" stroke-width="1"/>';
+          }
+          for (i = 0; i < P17; i++) {
+            s += '<text x="' + cx(i) + '" y="' + (MT + P17 * C + 14) + '" font-size="10" text-anchor="middle" fill="#6c757d">' + i + "</text>";
+            s += '<text x="' + (ML - 8) + '" y="' + (cy(i) + 3) + '" font-size="10" text-anchor="end" fill="#6c757d">' + i + "</text>";
+          }
+          s += '<text x="' + (ML + P17 * C) + '" y="' + (VH - 2) + '" font-size="10" text-anchor="end" fill="#6c757d">x</text>';
+          s += '<text x="8" y="' + (MT + 8) + '" font-size="10" fill="#6c757d">y</text>';
+
+          pts17.forEach(function (pt) {
+            s += '<circle cx="' + cx(pt[0]) + '" cy="' + cy(pt[1]) + '" r="3.2" fill="#adb5bd"/>';
+          });
+
+          var labels = {};
+          function addLabel(P, t) {
+            if (!P) return;
+            var key = P[0] + "," + P[1];
+            labels[key] = labels[key] || { P: P, t: [] };
+            if (labels[key].t.indexOf(t) < 0) labels[key].t.push(t);
+          }
+          addLabel(anim.G, "G");
+          for (i = 0; i < anim.idx; i++) addLabel(anim.steps[i].R, anim.steps[i].mult + "G");
+
+          var last = anim.idx > 0 ? anim.steps[anim.idx - 1] : null;
+          if (last && last.A && last.B) {
+            s += '<line x1="' + cx(last.A[0]) + '" y1="' + cy(last.A[1]) + '" x2="' + cx(last.B[0]) + '" y2="' + cy(last.B[1]) + '" stroke="#fd7e14" stroke-width="1.5" stroke-dasharray="4 3"/>';
+          }
+          Object.keys(labels).forEach(function (key) {
+            var L = labels[key], P = L.P;
+            var isG = L.t.length === 1 && L.t[0] === "G";
+            s += '<circle cx="' + cx(P[0]) + '" cy="' + cy(P[1]) + '" r="' + (isG ? 5 : 4.5) + '" fill="' + (isG ? "#198754" : "#0d6efd") + '"/>';
+            s += '<text x="' + (cx(P[0]) + 7) + '" y="' + (cy(P[1]) - 5) + '" font-size="10" fill="#212529">' + L.t.join("=") + "</text>";
+          });
+          if (last) {
+            [last.A, last.B].forEach(function (P) {
+              if (P) s += '<circle cx="' + cx(P[0]) + '" cy="' + cy(P[1]) + '" r="9" fill="none" stroke="#fd7e14" stroke-width="2"/>';
+            });
+            if (last.R) s += '<circle cx="' + cx(last.R[0]) + '" cy="' + cy(last.R[1]) + '" r="6.5" fill="#dc3545"/>';
+          }
+          svg.innerHTML = s;
+
+          var total = anim.steps.length;
+          var html = "";
+          if (anim.idx === 0) {
+            html =
+              "Start: R = G = " + fp(anim.G) + ".<br>" +
+              (total === 0
+                ? "k = 1: nothing to compute, Q = G."
+                : "Algorithm: " + (anim.mode === "inc" ? "incremental, k − 1 = " + (anim.k - 1) + " additions" + (anim.k > 201 ? " (animation shows the first 200)" : "") : "double-and-add on the bits of " + anim.k.toString(2)) +
+                  ".<br>Press ▶ Play or ▶| Next.");
+          } else {
+            var st = anim.steps[anim.idx - 1];
+            html =
+              "Step " + anim.idx + " / " + total + ": " +
+              (st.kind === "add" || st.kind === "double"
+                ? (st.kind === "double" ? "2·" + fp(st.A) : fp(st.A) + " + " + fp(st.B))
+                : fp(st.A) + " + " + fp(st.B)) +
+              "<br>" + formulaOf(st, P17) +
+              (coordsOf(st, P17) ? "<br>" + coordsOf(st, P17) : "") +
+              "<br><strong>" + st.mult + "G = " + fp(st.R) + "</strong>";
+            if (anim.idx === total)
+              html += "<br><br>Done" + (anim.mode === "inc" && anim.k > 201 ? " (animation truncated)" : "") + ": the toy public key is Q = " + fp(st.R) + ".";
+          }
+          caption.innerHTML = html;
+          document.getElementById("bPlay").textContent = anim.timer ? "⏸ Pause" : "▶ Play";
+        }
+
+        function stopPlay() {
+          if (anim.timer) {
+            clearInterval(anim.timer);
+            anim.timer = null;
+          }
+        }
+        function stepFwd() {
+          if (anim.idx < anim.steps.length) {
+            anim.idx++;
+            drawViz();
+          } else {
+            stopPlay();
+            drawViz();
+          }
+        }
+        function stepBack() {
+          if (anim.idx > 0) {
+            anim.idx--;
+            drawViz();
+          }
+        }
+        function startPlay() {
+          if (anim.timer) return;
+          if (anim.idx >= anim.steps.length) anim.idx = 0;
+          anim.timer = setInterval(stepFwd, Number(document.getElementById("speed").value));
+          drawViz();
+        }
+
+        document.getElementById("bReset").addEventListener("click", function () { stopPlay(); anim.idx = 0; drawViz(); });
+        document.getElementById("bPrev").addEventListener("click", function () { stopPlay(); stepBack(); });
+        document.getElementById("bNext").addEventListener("click", function () { stopPlay(); stepFwd(); });
+        document.getElementById("bPlay").addEventListener("click", function () { if (anim.timer) { stopPlay(); drawViz(); } else startPlay(); });
+        document.getElementById("modeSel").addEventListener("change", buildAnim);
+        document.getElementById("speed").addEventListener("input", function () {
+          document.getElementById("speedVal").textContent = this.value;
+          if (anim.timer) { stopPlay(); startPlay(); }
+        });
+
+        function refreshPart12() {
+          if (!readInputs()) return;
+          renderPart1();
+          buildAnim();
+        }
+        gSel.addEventListener("change", refreshPart12);
+        kIn.addEventListener("input", refreshPart12);
+
+        /* ============================================================
+           Part 3 — statistics on all multiples kG
+           ============================================================ */
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+
+        function popcount(v) {
+          var c = 0;
+          while (v) { c += v & 1; v >>>= 1; }
+          return c;
+        }
+
+        function pearson(n, getA, getB) {
+          var sa = 0, sb = 0, i;
+          for (i = 1; i <= n; i++) { sa += getA(i); sb += getB(i); }
+          var ma = sa / n, mb = sb / n, sab = 0, saa = 0, sbb = 0;
+          for (i = 1; i <= n; i++) {
+            var da = getA(i) - ma, db = getB(i) - mb;
+            sab += da * db; saa += da * da; sbb += db * db;
+          }
+          if (saa === 0 || sbb === 0) return NaN;
+          return sab / Math.sqrt(saa * sbb);
+        }
+
+        var cache = {};
+
+        function computeStats(p, xBase, seed) {
+          var key = p + "|" + xBase + "|" + seed;
+          if (cache[key]) return cache[key];
+
+          var sqrt = new Int32Array(p).fill(-1), y;
+          for (y = 0; y < p; y++) {
+            var sq = (y * y) % p;
+            if (sqrt[sq] < 0) sqrt[sq] = y;
+          }
+          function rhs(x) { return (((x * x) % p) * x + 7) % p; }
+
+          var nE = 1, cand = [];
+          for (var x = 0; x < p; x++) {
+            var yy = sqrt[rhs(x)];
+            if (yy >= 0) {
+              nE += yy === 0 ? 1 : 2;
+              if (cand.length < 8) cand.push([x, yy]);
+            }
+          }
+
+          var cap = p + 2 + Math.ceil(2 * Math.sqrt(p));
+          function order(G, store) {
+            var P = G, k = 1;
+            if (store) { store.X[1] = G[0]; store.Y[1] = G[1]; }
+            for (;;) {
+              var r = addPts(P, G, p).R;
+              k++;
+              if (r === null) return k;
+              if (k > cap) return -1;
+              if (store) { store.X[k] = r[0]; store.Y[k] = r[1]; }
+              P = r;
+            }
+          }
+
+          var G = null;
+          if (xBase !== null) {
+            var yb = sqrt[rhs(xBase)];
+            if (yb < 0) return { error: "x = " + xBase + " is not the abscissa of a point of the curve (x³ + 7 is not a square mod " + p + ")." };
+            G = [xBase, yb];
+          } else {
+            var bestN = 0;
+            cand.forEach(function (c) {
+              var o = order(c, null);
+              if (o > bestN) { bestN = o; G = c; }
+            });
+          }
+
+          var store = { X: new Int32Array(cap + 2), Y: new Int32Array(cap + 2) };
+          var n = order(G, store);
+          var N = n - 1, X = store.X, Y = store.Y;
+
+          // histograms of x and y
+          var B = p <= 100 ? p : 32;
+          var hx = new Array(B).fill(0), hy = new Array(B).fill(0), k;
+          var cntX = new Int32Array(p), cntY = new Int32Array(p);
+          for (k = 1; k <= N; k++) {
+            hx[Math.floor((X[k] * B) / p)]++;
+            hy[Math.floor((Y[k] * B) / p)]++;
+            cntX[X[k]]++;
+            cntY[Y[k]]++;
+          }
+          function chi(h) {
+            var e = N / B, s = 0;
+            h.forEach(function (o) { s += ((o - e) * (o - e)) / e; });
+            return s / (B - 1);
+          }
+          var chiX = chi(hx), chiY = chi(hy), reliable = N / B >= 5;
+
+          var mult = { 1: 0, 2: 0, other: 0 }, distinctX = 0, distinctY = 0, v;
+          for (v = 0; v < p; v++) {
+            if (cntX[v] > 0) { distinctX++; if (cntX[v] === 1) mult[1]++; else if (cntX[v] === 2) mult[2]++; else mult.other++; }
+            if (cntY[v] > 0) distinctY++;
+          }
+
+          // bit distribution
+          var w = (p - 1).toString(2).length;
+          var bx = new Array(w).fill(0), by = new Array(w).fill(0), b;
+          for (k = 1; k <= N; k++)
+            for (b = 0; b < w; b++) {
+              bx[b] += (X[k] >> b) & 1;
+              by[b] += (Y[k] >> b) & 1;
+            }
+          for (b = 0; b < w; b++) { bx[b] /= N; by[b] /= N; }
+
+          // correlations
+          var rKX = pearson(N, function (i) { return i; }, function (i) { return X[i]; });
+          var rKY = pearson(N, function (i) { return i; }, function (i) { return Y[i]; });
+          var rXY = pearson(N, function (i) { return X[i]; }, function (i) { return Y[i]; });
+
+          // avalanche: flip one bit of k, compare the bits of x||y
+          var rnd = rng(seed);
+          var kbits = N.toString(2).length;
+          var perBit = new Array(2 * w).fill(0), trials = 0, sum = 0, sum2 = 0, t;
+          for (t = 0; t < 3000; t++) {
+            var k0 = 1 + Math.floor(rnd() * N), k1 = -1, tries;
+            for (tries = 0; tries < 10; tries++) {
+              var cand2 = k0 ^ (1 << Math.floor(rnd() * kbits));
+              if (cand2 >= 1 && cand2 < n && cand2 !== k0) { k1 = cand2; break; }
+            }
+            if (k1 < 0) continue;
+            var dx = X[k0] ^ X[k1], dy = Y[k0] ^ Y[k1];
+            var ham = popcount(dx) + popcount(dy);
+            for (b = 0; b < w; b++) {
+              perBit[b] += (dx >> b) & 1;
+              perBit[w + b] += (dy >> b) & 1;
+            }
+            var fr = ham / (2 * w);
+            sum += fr; sum2 += fr * fr; trials++;
+          }
+          var avMean = trials ? sum / trials : NaN;
+          var avStd = trials ? Math.sqrt(Math.max(sum2 / trials - avMean * avMean, 0)) : NaN;
+          for (b = 0; b < 2 * w; b++) perBit[b] = trials ? perBit[b] / trials : 0;
+
+          // homomorphism: (k1 + k2)G == k1G + k2G
+          var okH = 0, totH = 500, h;
+          for (h = 0; h < totH; h++) {
+            var a1 = 1 + Math.floor(rnd() * N), a2 = 1 + Math.floor(rnd() * N);
+            var sI = (a1 + a2) % n;
+            var lhs = sI === 0 ? null : [X[sI], Y[sI]];
+            var rhsP = addPts([X[a1], Y[a1]], [X[a2], Y[a2]], p).R;
+            if (fp(lhs) === fp(rhsP)) okH++;
+          }
+
+          var res = {
+            p: p, nE: nE, G: G, n: n, N: N, X: X, Y: Y, B: B, hx: hx, hy: hy,
+            chiX: chiX, chiY: chiY, reliable: reliable, mult: mult,
+            distinctX: distinctX, distinctY: distinctY, w: w, bx: bx, by: by,
+            rKX: rKX, rKY: rKY, rXY: rXY,
+            av: { mean: avMean, std: avStd, perBit: perBit, trials: trials },
+            homo: { ok: okH, total: totH }
+          };
+          cache[key] = res;
+          return res;
+        }
+
+        function f3(v) { return isFinite(v) ? v.toFixed(3) : "n/a"; }
+
+        function barChart(vals, o) {
+          var W = 560, H = 190, ml = 44, mr = 10, mt = 10, mb = 34;
+          var iw = W - ml - mr, ih = H - mt - mb;
+          var max = o.yMax != null ? o.yMax : Math.max.apply(null, vals.concat([1e-9]));
+          var bw = iw / vals.length;
+          var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="' + o.aria + '">';
+          s += '<line x1="' + ml + '" y1="' + (mt + ih) + '" x2="' + (ml + iw) + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          s += '<line x1="' + ml + '" y1="' + mt + '" x2="' + ml + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          s += '<text x="' + (ml - 5) + '" y="' + (mt + 4) + '" font-size="10" text-anchor="end" fill="#495057">' + o.fmt(max) + "</text>";
+          s += '<text x="' + (ml - 5) + '" y="' + (mt + ih + 4) + '" font-size="10" text-anchor="end" fill="#495057">0</text>';
+          vals.forEach(function (v, i) {
+            var h = (ih * v) / max;
+            s += '<rect x="' + (ml + i * bw + 0.5) + '" y="' + (mt + ih - h) + '" width="' + Math.max(bw - 1, 0.5) + '" height="' + h + '" fill="' + (o.color || "#0d6efd") + '"><title>' + o.label(i) + ": " + o.fmt(v) + "</title></rect>";
+          });
+          if (o.ref != null) {
+            var ry = mt + ih - (ih * o.ref) / max;
+            s += '<line x1="' + ml + '" y1="' + ry + '" x2="' + (ml + iw) + '" y2="' + ry + '" stroke="#dc3545" stroke-dasharray="4 3"/>';
+            s += '<text x="' + (ml + iw) + '" y="' + (ry - 3) + '" font-size="10" text-anchor="end" fill="#dc3545">' + o.refLabel + "</text>";
+          }
+          var every = Math.ceil(vals.length / 12);
+          vals.forEach(function (v, i) {
+            if (i % every === 0)
+              s += '<text x="' + (ml + i * bw + bw / 2) + '" y="' + (mt + ih + 13) + '" font-size="10" text-anchor="middle" fill="#495057">' + o.tick(i) + "</text>";
+          });
+          s += '<text x="' + (ml + iw / 2) + '" y="' + (H - 4) + '" font-size="11" text-anchor="middle" fill="#495057">' + o.xLabel + "</text>";
+          return s + "</svg>";
+        }
+
+        function drawScatter(canvas, N, p, getV, color) {
+          var ctx = canvas.getContext && canvas.getContext("2d");
+          if (!ctx) return;
+          var W = 560, H = 240, ml = 42, mr = 8, mt = 8, mb = 26;
+          canvas.width = W * 2;
+          canvas.height = H * 2;
+          ctx.scale(2, 2);
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, W, H);
+          var iw = W - ml - mr, ih = H - mt - mb;
+          ctx.strokeStyle = "#6c757d";
+          ctx.beginPath();
+          ctx.moveTo(ml, mt); ctx.lineTo(ml, mt + ih); ctx.lineTo(ml + iw, mt + ih);
+          ctx.stroke();
+          ctx.fillStyle = "#495057";
+          ctx.font = "10px system-ui, sans-serif";
+          ctx.textAlign = "right";
+          ctx.fillText(String(p - 1), ml - 4, mt + 8);
+          ctx.fillText("0", ml - 4, mt + ih);
+          ctx.textAlign = "center";
+          ctx.fillText("k = 1 … " + N, ml + iw / 2, H - 6);
+          ctx.fillStyle = color;
+          var r = N < 200 ? 3 : 1.1;
+          ctx.globalAlpha = N < 200 ? 1 : 0.55;
+          for (var k = 1; k <= N; k++) {
+            var px = ml + ((k - 1) / Math.max(N - 1, 1)) * iw;
+            var py = mt + ih - (getV(k) / (p - 1)) * ih;
+            ctx.fillRect(px - r, py - r, 2 * r, 2 * r);
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        function pct(v) { return (100 * v).toFixed(1) + "%"; }
+
+        function renderDetail(res) {
+          var out = document.getElementById("statsOut");
+          var p = res.p, w = res.w;
+          var binTxt = function (i) {
+            if (res.B === p) return String(i);
+            return Math.floor((i * p) / res.B) + "–" + (Math.floor(((i + 1) * p) / res.B) - 1);
+          };
+          var hOpts = function (name, aria) {
+            return {
+              aria: aria, xLabel: name + (res.B === p ? " value" : " range (" + res.B + " equal bins)"),
+              fmt: function (v) { return String(Math.round(v)); },
+              label: function (i) { return name + " in " + binTxt(i); },
+              tick: function (i) { return res.B === p ? i : Math.floor((i * p) / res.B); }
+            };
+          };
+          var bOpts = function (name, offset) {
+            return {
+              aria: "Fraction of ones for each bit of " + name,
+              xLabel: "bit position of " + name + " (0 = least significant)", yMax: 1, ref: 0.5, refLabel: "50%",
+              fmt: function (v) { return (100 * v).toFixed(1) + "%"; },
+              label: function (i) { return "bit " + i; }, tick: function (i) { return i; }
+            };
+          };
+          var aOpts = {
+            aria: "Probability that each output bit flips", xLabel: "output bit (x bits 0…" + (w - 1) + ", then y bits 0…" + (w - 1) + ")",
+            yMax: 1, ref: 0.5, refLabel: "50%", color: "#198754",
+            fmt: function (v) { return (100 * v).toFixed(1) + "%"; },
+            label: function (i) { return (i < w ? "x" : "y") + " bit " + (i % w); }, tick: function (i) { return i; }
+          };
+
+          var html = "";
+          html +=
+            '<p class="mono small mb-3">p = ' + p + ", #E = " + res.nE + " points, G = " + fp(res.G) +
+            ", ord(G) = n = " + res.n + ", samples N = n − 1 = " + res.N + " (k = 1 … " + res.N + ").</p>";
+
+          html += '<h3 class="h6">Distribution of the coordinates</h3><div class="row g-3 mb-2">';
+          html += '<div class="col-lg-6"><div class="chart-box">' + barChart(res.hx, hOpts("x", "Histogram of the x coordinates")) + "</div></div>";
+          html += '<div class="col-lg-6"><div class="chart-box">' + barChart(res.hy, hOpts("y", "Histogram of the y coordinates")) + "</div></div></div>";
+          html +=
+            '<p class="small mb-1">Uniformity against a flat histogram: χ²/df = <span class="mono">' + res.chiX.toFixed(2) +
+            "</span> for x and <span class=\"mono\">" + res.chiY.toFixed(2) + "</span> for y" +
+            (res.reliable ? "" : " (†: fewer than 5 expected samples per bin, not reliable)") +
+            " (about 1 is expected for a uniform sample).</p>";
+          html +=
+            '<p class="small text-secondary mb-4">The points lie on the curve, not on the whole plane: x takes only ' + res.distinctX +
+            " of the " + p + " possible values and y takes " + res.distinctY + ".</p>";
+
+          html += '<h3 class="h6">Frequency of individual values</h3>';
+          html +=
+            '<p class="small mb-4">Every point <span class="mono">kG</span> (k = 1 … n−1) appears exactly once, so the map is injective on this range. ' +
+            "Each x value occurs " + (res.mult[2] ? res.mult[2] + " time(s) with multiplicity 2 (the points P and −P)" : "") +
+            (res.mult[1] ? (res.mult[2] ? " and " : "") + res.mult[1] + " time(s) with multiplicity 1 (a point with y = 0)" : "") +
+            (res.mult.other ? "; " + res.mult.other + " x values occur more than twice" : "") + ".</p>";
+
+          html += '<h3 class="h6">Distribution of bits</h3><div class="row g-3 mb-2">';
+          html += '<div class="col-lg-6"><div class="chart-box">' + barChart(res.bx, bOpts("x")) + "</div></div>";
+          html += '<div class="col-lg-6"><div class="chart-box">' + barChart(res.by, bOpts("y")) + "</div></div></div>";
+          html += '<p class="small text-secondary mb-4">Fraction of outputs having a 1 in each bit position (' + w +
+            " bits are needed to write a value below p). A random bit string would give about 50% everywhere; the top bits are biased because values are below p.</p>";
+
+          html += '<h3 class="h6">Correlation between input and output</h3><div class="row g-3 mb-2">';
+          html += '<div class="col-lg-6"><canvas id="scX" class="scatter" role="img" aria-label="Scatter plot of k against the x coordinate"></canvas></div>';
+          html += '<div class="col-lg-6"><canvas id="scY" class="scatter" role="img" aria-label="Scatter plot of k against the y coordinate"></canvas></div></div>';
+          html +=
+            '<p class="small mb-4">Pearson r(k, x) = <span class="mono">' + f3(res.rKX) + '</span>, r(k, y) = <span class="mono">' + f3(res.rKY) +
+            '</span>, r(x, y) = <span class="mono">' + f3(res.rXY) + "</span>. Values near 0 mean no linear dependence (with N = " + res.N +
+            " samples, |r| up to about " + (2 / Math.sqrt(res.N)).toFixed(3) + " is within normal fluctuation).</p>";
+
+          html += '<h3 class="h6">Avalanche-like behaviour</h3>';
+          if (res.av.trials) {
+            html += '<div class="chart-box mb-2">' + barChart(res.av.perBit, aOpts) + "</div>";
+            html +=
+              '<p class="small mb-4">Flipping one random bit of k (keeping 1 ≤ k′ < n) changes on average <span class="mono">' +
+              pct(res.av.mean) + "</span> of the " + 2 * w + " output bits (std " + pct(res.av.std) + ", " + res.av.trials +
+              " trials). A hash-like avalanche would be close to 50% in every bit.</p>";
+          } else {
+            html += '<p class="small mb-4">Not measurable here: no one-bit change of k stays within 1 … n−1.</p>';
+          }
+
+          html += '<h3 class="h6">Algebraic relation between outputs</h3>';
+          html +=
+            '<p class="small mb-0">Test of <span class="mono">(k₁ + k₂)G = k₁G + k₂G</span>: ' + res.homo.ok + " of " + res.homo.total +
+            " random pairs satisfy it" + (res.homo.ok === res.homo.total ? " ✓" : "") + ". A hash function does not have this property.</p>";
+
+          out.innerHTML = html;
+          drawScatter(document.getElementById("scX"), res.N, p, function (k) { return res.X[k]; }, "#0d6efd");
+          drawScatter(document.getElementById("scY"), res.N, p, function (k) { return res.Y[k]; }, "#6c757d");
+        }
+
+        function runDetail() {
+          var err = document.getElementById("statsError");
+          var p = Number(document.getElementById("curveSel").value);
+          var xs = document.getElementById("xBase").value.trim();
+          var seed = Number(document.getElementById("seed").value);
+          var xBase = null;
+          if (xs !== "") {
+            xBase = Number(xs);
+            if (!Number.isInteger(xBase) || xBase < 0 || xBase >= p) {
+              err.textContent = "The base point x must be an integer between 0 and " + (p - 1) + ".";
+              return;
+            }
+          }
+          if (!Number.isInteger(seed) || seed < 0) {
+            err.textContent = "The seed must be a non-negative integer.";
+            return;
+          }
+          var res = computeStats(p, xBase, seed);
+          if (res.error) {
+            err.textContent = res.error;
+            return;
+          }
+          err.textContent = "";
+          renderDetail(res);
+        }
+
+        function renderSummary() {
+          var tbody = document.querySelector("#summaryTable tbody");
+          var rows = "";
+          [17, 97, 1009, 10009, 65521].forEach(function (p) {
+            var r = computeStats(p, null, 1);
+            rows +=
+              "<tr><td>" + p + "</td><td>" + r.nE + "</td><td>" + r.n + "</td><td>" +
+              r.chiX.toFixed(2) + (r.reliable ? "" : "†") + "</td><td>" + r.chiY.toFixed(2) + (r.reliable ? "" : "†") +
+              "</td><td>" + f3(r.rKX) + "</td><td>" + f3(r.rKY) + "</td><td>" +
+              (r.av.trials ? pct(r.av.mean) : "n/a") + "</td><td>" + r.homo.ok + "/" + r.homo.total + "</td></tr>";
+          });
+          tbody.innerHTML = rows;
+        }
+
+        document.getElementById("runStats").addEventListener("click", runDetail);
+
+        /* ============================================================
+           Start-up
+           ============================================================ */
+        refreshPart12();
+        setTimeout(function () {
+          renderSummary();
+          runDetail();
+        }, 0);
+      })();
+    </script>
   </body>
-  <footer class="py-3 my-4">
-    <p class="text-center text-body-secondary">© 2026 G N</p>
-  </footer>
 </html>
