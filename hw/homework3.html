@@ -29,13 +29,19 @@
   </head>
   <body class="bg-body-secondary">
     <div class="container-xl py-4">
+      <a
+        href="../index.html"
+        class="link-secondary link-opacity-75 d-inline-block mb-2"
+        >← Back to the homework list</a
+      >
+
       <header class="mt-3 mb-4">
-        <!-- <p
+        <p
           class="text-uppercase text-secondary fw-semibold small mb-1"
           style="letter-spacing: 0.08em"
         >
           HW 3 · Statistics · A.Y. 2026/2027
-        </p> -->
+        </p>
         <h1 class="display-5">Toy ECC Encryption versus the Caesar Cipher</h1>
         <p class="lead">
           Encryption, statistical cryptanalysis and attacks on a restricted key
@@ -329,3 +335,895 @@ A student who wishes to explore these ideas can write a short program in a few h
             <li>
               <strong>Exhaustive search.</strong> Compute
               <span class="mono">G, 2G, 3G, …</span> with one point addition
+              per step until <span class="mono">dG = Q</span>. Cost about
+              <span class="mono">2<sup>K</sup>/2</span> additions on average.
+            </li>
+            <li>
+              <strong>Baby-step giant-step.</strong> Let
+              <span class="mono">m = 2<sup>⌈K/2⌉</sup></span>. Store the
+              baby steps <span class="mono">jG</span> for
+              <span class="mono">0 ≤ j &lt; m</span>, then compute the giant
+              steps <span class="mono">Q − i·mG</span> until one of them
+              equals a stored point; then <span class="mono">d = i·m + j</span>.
+              Cost about <span class="mono">2·2<sup>K/2</sup></span>
+              additions and a table of <span class="mono">m</span> points.
+            </li>
+          </ul>
+          <p class="small">
+            The attack uses the key <span class="mono">K</span>,
+            <span class="mono">d</span> and <span class="mono">r</span> chosen
+            in section 1. Once <span class="mono">d</span> is recovered the
+            attacker decrypts the message exactly like the receiver.
+            Exhaustive search is limited to K ≤ 20 in the browser.
+          </p>
+          <div class="mb-3">
+            <button id="bAttack" type="button" class="btn btn-secondary">Attack the key of section 1</button>
+            <span id="progA" class="small text-secondary ms-2"></span>
+          </div>
+          <div id="attackOut" class="mb-4"></div>
+
+          <h2 class="h6">How the cost grows with K</h2>
+          <p class="small">
+            For each K the attack is repeated on 5 random private keys (seeded
+            generator). The counts are group operations (point additions).
+          </p>
+          <div class="mb-3">
+            <button id="bScale" type="button" class="btn btn-secondary">Run scaling experiment</button>
+            <span id="progS" class="small text-secondary ms-2"></span>
+          </div>
+          <div id="scaleOut"></div>
+        </div>
+      </section>
+
+      <!-- ===================== DISCUSSION ===================== -->
+      <section class="card mb-4" id="discussion">
+        <div class="card-header fw-semibold">6 · Discussion</div>
+        <div class="card-body">
+          <p>
+            <strong>Two different attacks.</strong> The statistical attack on
+            the Caesar cipher is a <em>ciphertext-only</em> attack that
+            exploits a property of the <em>plaintext</em>: the cipher moves
+            the letter counts but keeps their shape. It needs a model of the
+            language, becomes reliable only when the message is long enough for
+            the counts to be stable, and can fail on short messages, where
+            several keys give plausible text. The attack on the toy ECC scheme
+            is a <em>key-search</em> attack that exploits a property of the
+            <em>key space</em>: it needs nothing about the message, always
+            works if the key range is known, and its success is certain,
+            because a candidate can be verified exactly by checking
+            <span class="mono">dG = Q</span>. Its cost depends only on
+            <span class="mono">K</span>, not on the length or the content of
+            the message. For the ECC ciphertext no statistical test helps: the
+            output bytes look uniform, as shown in section 3.
+          </p>
+          <p>
+            <strong>Why this does not scale to a proper configuration.</strong>
+            With a private key chosen uniformly in
+            <span class="mono">[1, n)</span> with
+            <span class="mono">n ≈ 2²⁵⁶</span>, exhaustive search needs about
+            <span class="mono">2²⁵⁵</span> additions, and baby-step giant-step
+            about <span class="mono">2¹²⁸</span> operations <em>and</em> a table
+            of <span class="mono">2¹²⁸</span> points, which is far beyond any
+            possible memory. Pollard's rho method removes the table but still
+            needs about <span class="mono">√n ≈ 2¹²⁸</span> steps. At the
+            speed measured in section 5 this is many orders of magnitude longer
+            than the age of the universe. No generic method does much better
+            on secp256k1; this is why the best known attacks on the elliptic
+            curve discrete logarithm are exponential, in contrast with the
+            subexponential methods against RSA.
+          </p>
+          <p><strong>Other attacks and where the weakness comes from.</strong></p>
+          <ul>
+            <li>
+              <em>Weaknesses of the restricted key space.</em> Because
+              <span class="mono">d</span> lies in a known interval, Pollard's
+              kangaroo method finds it in about
+              <span class="mono">2<sup>K/2</sup></span> steps with very little
+              memory. A key chosen from a small set or from a low-entropy
+              source (a short password, a timestamp) can also be found by
+              enumerating the likely values, even if the interval is larger.
+            </li>
+            <li>
+              <em>Weaknesses of the design of the toy scheme.</em> Even with a
+              256-bit <span class="mono">d</span> the construction has flaws.
+              It has no authentication, so it is malleable: flipping a bit of
+              <span class="mono">C₂</span> flips the same bit of the decrypted
+              message and the receiver cannot notice. Reusing
+              <span class="mono">r</span> reuses the keystream, so
+              <span class="mono">C₂ ⊕ C₂' = m ⊕ m'</span> leaks the plaintexts
+              (the same flaw as a one-time pad used twice). The sender must
+              also check that <span class="mono">Q</span> lies on the curve to
+              avoid invalid-point attacks. Real schemes such as ECIES or
+              hybrid public-key encryption add a message authentication code
+              or an AEAD cipher, a proper key derivation function and point
+              validation.
+            </li>
+            <li>
+              <em>Weaknesses of the Caesar cipher.</em> Besides the tiny key
+              space, there is the structural leak of the letter distribution.
+              Increasing the key space (a general substitution) does not remove
+              the leak, which is why the frequency attack still applies to it
+              and why modern ciphers are designed so that the ciphertext is
+              indistinguishable from random.
+            </li>
+          </ul>
+          <p class="mb-0">
+            <strong>Take-away.</strong> Security needs both a key space that is
+            too large to search and an output that carries no statistical trace
+            of the input. The Caesar cipher fails both requirements; the toy
+            ECC scheme satisfies the second one but not the first; a properly
+            configured scheme satisfies both.
+             <a href="../index.html" class="link-secondary link-opacity-75 d-inline-block mt-4" >← Back to the homework list</a >
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <footer class="py-3 my-4">
+      <p class="text-center text-body-secondary">© 2026 Giorgio N.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var enc = new TextEncoder();
+        var dec = new TextDecoder();
+        var subtle = window.crypto && window.crypto.subtle ? window.crypto.subtle : null;
+        var $ = function (id) { return document.getElementById(id); };
+
+        /* ============================================================
+           Helpers
+           ============================================================ */
+        function hex(u8) {
+          var s = "";
+          for (var i = 0; i < u8.length; i++) s += (u8[i] < 16 ? "0" : "") + u8[i].toString(16);
+          return s;
+        }
+        function bigToBytes(b, len) {
+          var h = b.toString(16);
+          while (h.length < len * 2) h = "0" + h;
+          var out = new Uint8Array(len);
+          for (var i = 0; i < len; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+          return out;
+        }
+        function concat() {
+          var n = 0, i;
+          for (i = 0; i < arguments.length; i++) n += arguments[i].length;
+          var out = new Uint8Array(n), o = 0;
+          for (i = 0; i < arguments.length; i++) { out.set(arguments[i], o); o += arguments[i].length; }
+          return out;
+        }
+        function esc(s) {
+          return String(s).replace(/[&<>"]/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+          });
+        }
+        function tick() { return new Promise(function (r) { setTimeout(r, 0); }); }
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        function pct(v) { return (100 * v).toFixed(1) + "%"; }
+        function mean(a) { var s = 0; a.forEach(function (v) { s += v; }); return s / a.length; }
+
+        /* ============================================================
+           secp256k1 (Jacobian coordinates)
+           ============================================================ */
+        var P = (1n << 256n) - (1n << 32n) - 977n;
+        var N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+        var GX = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n;
+        var GY = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n;
+
+        function md(a) { var r = a % P; return r >= 0n ? r : r + P; }
+        function invP(a) {
+          var r0 = md(a), r1 = P, s0 = 1n, s1 = 0n, q, t;
+          while (r1 !== 0n) {
+            q = r0 / r1;
+            t = r0 - q * r1; r0 = r1; r1 = t;
+            t = s0 - q * s1; s0 = s1; s1 = t;
+          }
+          return md(s0);
+        }
+        function jdbl(p) {
+          if (!p) return null;
+          var X = p[0], Y = p[1], Z = p[2];
+          if (Y === 0n) return null;
+          var A = md(X * X), B = md(Y * Y), C = md(B * B);
+          var t = X + B;
+          var D = md(2n * (md(t * t) - A - C));
+          var E = 3n * A, F = md(E * E);
+          var X3 = md(F - 2n * D);
+          return [X3, md(E * (D - X3) - 8n * C), md(2n * Y * Z)];
+        }
+        function jadd(p, q) {
+          if (!p) return q;
+          if (!q) return p;
+          var Z1s = md(p[2] * p[2]), Z2s = md(q[2] * q[2]);
+          var U1 = md(p[0] * Z2s), U2 = md(q[0] * Z1s);
+          var S1 = md(p[1] * Z2s * q[2]), S2 = md(q[1] * Z1s * p[2]);
+          if (U1 === U2) return S1 !== S2 ? null : jdbl(p);
+          var H = md(U2 - U1), R = md(S2 - S1);
+          var H2 = md(H * H), H3 = md(H * H2), V = md(U1 * H2);
+          var X3 = md(R * R - H3 - 2n * V);
+          return [X3, md(R * (V - X3) - S1 * H3), md(H * p[2] * q[2])];
+        }
+        /* mixed addition: q is affine [x, y] */
+        function jaddA(p, q) {
+          if (!p) return [q[0], q[1], 1n];
+          var Z1s = md(p[2] * p[2]);
+          var U2 = md(q[0] * Z1s), S2 = md(q[1] * Z1s * p[2]);
+          var H = md(U2 - p[0]), R = md(S2 - p[1]);
+          if (H === 0n) return R === 0n ? jdbl(p) : null;
+          var H2 = md(H * H), H3 = md(H * H2), V = md(p[0] * H2);
+          var X3 = md(R * R - H3 - 2n * V);
+          return [X3, md(R * (V - X3) - p[1] * H3), md(H * p[2])];
+        }
+        function toAffine(p) {
+          if (!p) return null;
+          var zi = invP(p[2]), zi2 = md(zi * zi);
+          return [md(p[0] * zi2), md(p[1] * zi2 * zi)];
+        }
+        /* scalar multiplication of an affine point (binary double-and-add) */
+        function mulPoint(k, pt) {
+          var bits = k.toString(2), R = null, base = [pt[0], pt[1], 1n];
+          for (var i = 0; i < bits.length; i++) {
+            R = jdbl(R);
+            if (bits[i] === "1") R = jadd(R, base);
+          }
+          return toAffine(R);
+        }
+        var G = [GX, GY];
+        function onCurve(pt) {
+          return md(pt[1] * pt[1] - (pt[0] * pt[0] * pt[0] + 7n)) === 0n;
+        }
+        function negPt(pt) { return [pt[0], md(-pt[1])]; }
+        function samePt(a, b) { return a && b && a[0] === b[0] && a[1] === b[1]; }
+        function compress(pt) {
+          return concat(new Uint8Array([pt[1] % 2n === 0n ? 2 : 3]), bigToBytes(pt[0], 32));
+        }
+        /* batch conversion of Jacobian points to affine (one inversion) */
+        function batchAffine(list) {
+          var n = list.length, acc = new Array(n), prod = 1n, i;
+          for (i = 0; i < n; i++) { acc[i] = prod; prod = md(prod * list[i][2]); }
+          var inv = invP(prod), out = new Array(n);
+          for (i = n - 1; i >= 0; i--) {
+            var zi = md(inv * acc[i]);
+            inv = md(inv * list[i][2]);
+            var zi2 = md(zi * zi);
+            out[i] = [md(list[i][0] * zi2), md(list[i][1] * zi2 * zi)];
+          }
+          return out;
+        }
+
+        /* ============================================================
+           Toy ECC encryption (ECIES-like)
+           ============================================================ */
+        async function sha256(u8) { return new Uint8Array(await subtle.digest("SHA-256", u8)); }
+
+        async function keystream(sx, len) {
+          var out = new Uint8Array(Math.ceil(len / 32) * 32), xb = bigToBytes(sx, 32);
+          for (var c = 0; c * 32 < len; c++) {
+            var ctr = new Uint8Array(4);
+            new DataView(ctr.buffer).setUint32(0, c, false);
+            out.set(await sha256(concat(xb, ctr)), c * 32);
+          }
+          return out.slice(0, len);
+        }
+        function xor(a, b) {
+          var o = new Uint8Array(a.length);
+          for (var i = 0; i < a.length; i++) o[i] = a[i] ^ b[i];
+          return o;
+        }
+        async function eccEncrypt(msg, Q, r) {
+          var C1 = mulPoint(r, G), S = mulPoint(r, Q);
+          var ks = await keystream(S[0], msg.length);
+          return { C1: C1, S: S, ks: ks, C2: xor(msg, ks) };
+        }
+        async function eccDecrypt(C1, C2, d) {
+          var S = mulPoint(d, C1);
+          var ks = await keystream(S[0], C2.length);
+          return { S: S, ks: ks, m: xor(C2, ks) };
+        }
+
+        var ecc = null; /* last encryption state, shared with section 5 */
+
+        function parseBig(s, name) {
+          s = String(s).trim();
+          if (!/^\d+$/.test(s)) throw new Error(name + " must be a positive integer.");
+          return BigInt(s);
+        }
+
+        async function runEcc() {
+          var err = $("eccErr"), out = $("eccOut");
+          err.textContent = "";
+          try {
+            if (!subtle) throw new Error("Web Crypto is not available: open the page over https.");
+            var K = Number($("kBits").value);
+            if (!Number.isInteger(K) || K < 8 || K > 28) throw new Error("K must be an integer between 8 and 28.");
+            var d = parseBig($("dIn").value, "d"), r = parseBig($("rIn").value, "r");
+            var lim = 1n << BigInt(K);
+            if (d < 1n || d >= lim) throw new Error("d must satisfy 1 ≤ d < 2^K = " + lim + ".");
+            if (r < 1n || r >= N) throw new Error("r must satisfy 1 ≤ r < n.");
+            var msg = enc.encode($("msg").value);
+            if (!msg.length) throw new Error("The message is empty.");
+            if (msg.length > 400) throw new Error("The message is limited to 400 bytes.");
+
+            var Q = mulPoint(d, G);
+            var e = await eccEncrypt(msg, Q, r);
+            var dd = await eccDecrypt(e.C1, e.C2, d);
+            var ok = dd.m.length === msg.length && dd.m.every(function (v, i) { return v === msg[i]; });
+            ecc = { K: K, d: d, r: r, Q: Q, C1: e.C1, C2: e.C2, msg: msg, lim: lim };
+
+            function row(a, b) {
+              return '<tr><th scope="row" class="small text-nowrap align-top">' + a +
+                '</th><td class="mono small text-break">' + b + "</td></tr>";
+            }
+            var h = '<div class="table-responsive"><table class="table table-sm table-striped mb-3"><tbody>';
+            h += row("Message m (" + msg.length + " bytes)", hex(msg));
+            h += row("Public key Q = dG (x)", hex(bigToBytes(Q[0], 32)));
+            h += row("Public key Q = dG (y)", hex(bigToBytes(Q[1], 32)));
+            h += row("C₁ = rG (compressed)", hex(compress(e.C1)));
+            h += row("Shared point S = rQ (x)", hex(bigToBytes(e.S[0], 32)));
+            h += row("Keystream KS", hex(e.ks));
+            h += row("C₂ = m ⊕ KS", hex(e.C2));
+            h += row("Receiver: S′ = dC₁ (x)", hex(bigToBytes(dd.S[0], 32)) + (dd.S[0] === e.S[0] ? " ✓ same shared point" : " ✗ different"));
+            h += row("Decrypted m", esc(dec.decode(dd.m)) + (ok ? " ✓" : " ✗ (mismatch)"));
+            h += "</tbody></table></div>";
+            h += '<p class="small text-secondary mb-0">Ciphertext = (C₁, C₂): ' + (33 + msg.length) +
+              " bytes for a message of " + msg.length + " bytes. Changing only <span class=\"mono\">r</span> gives a completely different C₁ and C₂ for the same message and the same public key.</p>";
+            out.innerHTML = h;
+          } catch (ex) {
+            out.innerHTML = "";
+            err.textContent = ex.message || String(ex);
+            ecc = null;
+          }
+        }
+
+        $("bRand").addEventListener("click", function () {
+          var K = Math.min(Math.max(Number($("kBits").value) || 16, 8), 28);
+          var a = new Uint32Array(3);
+          window.crypto.getRandomValues(a);
+          var d = (BigInt(a[0]) % ((1n << BigInt(K)) - 1n)) + 1n;
+          var r = ((BigInt(a[1]) << 32n) | BigInt(a[2])) + 1n;
+          $("dIn").value = d.toString();
+          $("rIn").value = r.toString();
+          refreshAll();
+        });
+
+        /* ============================================================
+           Caesar cipher and text statistics
+           ============================================================ */
+        function caesar(s, k) {
+          k = ((k % 26) + 26) % 26;
+          var o = "";
+          for (var i = 0; i < s.length; i++) {
+            var c = s.charCodeAt(i);
+            if (c >= 65 && c <= 90) o += String.fromCharCode(((c - 65 + k) % 26) + 65);
+            else if (c >= 97 && c <= 122) o += String.fromCharCode(((c - 97 + k) % 26) + 97);
+            else o += s[i];
+          }
+          return o;
+        }
+        function letterCounts(s) {
+          var c = new Array(26).fill(0);
+          for (var i = 0; i < s.length; i++) {
+            var x = s.charCodeAt(i) | 32;
+            if (x >= 97 && x <= 122) c[x - 97]++;
+          }
+          return c;
+        }
+        function sumArr(a) { var s = 0; a.forEach(function (v) { s += v; }); return s; }
+        function entropy(counts) {
+          var n = sumArr(counts), h = 0;
+          counts.forEach(function (c) { if (c) h -= (c / n) * Math.log2(c / n); });
+          return h;
+        }
+        function coincidence(counts) {
+          var n = sumArr(counts), s = 0;
+          counts.forEach(function (c) { s += c * (c - 1); });
+          return s / (n * (n - 1));
+        }
+        function chiUniform(counts) {
+          var n = sumArr(counts), e = n / counts.length, s = 0;
+          counts.forEach(function (c) { s += ((c - e) * (c - e)) / e; });
+          return s / (counts.length - 1);
+        }
+
+        function runCaesar() {
+          var err = $("caesarErr"), out = $("caesarOut");
+          var k = Number($("shiftIn").value);
+          if (!Number.isInteger(k) || k < 0 || k > 25) { err.textContent = "The shift must be an integer between 0 and 25."; return; }
+          err.textContent = "";
+          var m = $("msg").value, c = caesar(m, k), back = caesar(c, -k);
+          var A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", B = caesar(A, k);
+          var h = '<div class="table-responsive"><table class="table table-sm table-striped mb-3"><tbody>';
+          h += '<tr><th scope="row" class="small text-nowrap">Alphabet</th><td class="mono small">' + A + "</td></tr>";
+          h += '<tr><th scope="row" class="small text-nowrap">Shifted by ' + k + '</th><td class="mono small">' + B + "</td></tr>";
+          h += '<tr><th scope="row" class="small text-nowrap">Message</th><td class="mono small text-break">' + esc(m) + "</td></tr>";
+          h += '<tr><th scope="row" class="small text-nowrap">Ciphertext</th><td class="mono small text-break">' + esc(c) + "</td></tr>";
+          h += '<tr><th scope="row" class="small text-nowrap">Decrypted</th><td class="mono small text-break">' + esc(back) + (back === m ? " ✓" : " ✗") + "</td></tr>";
+          h += "</tbody></table></div>";
+          out.innerHTML = h;
+          lastCaesar = c;
+        }
+        var lastCaesar = "";
+
+        /* ============================================================
+           Charts
+           ============================================================ */
+        function barChart(vals, o) {
+          var W = 560, H = 190, ml = 44, mr = 10, mt = 10, mb = 34;
+          var iw = W - ml - mr, ih = H - mt - mb;
+          var max = o.yMax != null ? o.yMax : Math.max.apply(null, vals.concat([1e-9]));
+          var bw = iw / vals.length;
+          var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="' + o.aria + '">';
+          s += '<line x1="' + ml + '" y1="' + (mt + ih) + '" x2="' + (ml + iw) + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          s += '<line x1="' + ml + '" y1="' + mt + '" x2="' + ml + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          s += '<text x="' + (ml - 5) + '" y="' + (mt + 4) + '" font-size="10" text-anchor="end" fill="#495057">' + o.fmt(max) + "</text>";
+          s += '<text x="' + (ml - 5) + '" y="' + (mt + ih + 4) + '" font-size="10" text-anchor="end" fill="#495057">0</text>';
+          vals.forEach(function (v, i) {
+            var h = (ih * v) / max;
+            var col = o.hi === i ? "#dc3545" : o.color || "#0d6efd";
+            s += '<rect x="' + (ml + i * bw + 0.3) + '" y="' + (mt + ih - h) + '" width="' + Math.max(bw - 0.6, 0.4) + '" height="' + h + '" fill="' + col + '"><title>' + o.label(i) + ": " + o.fmt(v) + "</title></rect>";
+          });
+          if (o.ref != null) {
+            var ry = mt + ih - (ih * o.ref) / max;
+            s += '<line x1="' + ml + '" y1="' + ry + '" x2="' + (ml + iw) + '" y2="' + ry + '" stroke="#dc3545" stroke-dasharray="4 3"/>';
+            s += '<text x="' + (ml + iw) + '" y="' + (ry - 3) + '" font-size="10" text-anchor="end" fill="#dc3545">' + o.refLabel + "</text>";
+          }
+          var every = o.every || Math.ceil(vals.length / 12);
+          vals.forEach(function (v, i) {
+            if (i % every === 0)
+              s += '<text x="' + (ml + i * bw + bw / 2) + '" y="' + (mt + ih + 13) + '" font-size="10" text-anchor="middle" fill="#495057">' + (o.tick ? o.tick(i) : i) + "</text>";
+          });
+          s += '<text x="' + (ml + iw / 2) + '" y="' + (H - 4) + '" font-size="11" text-anchor="middle" fill="#495057">' + o.xLabel + "</text>";
+          return s + "</svg>";
+        }
+
+        function lineChart(xs, series, o) {
+          var W = 560, H = 230, ml = 44, mr = 12, mt = 12, mb = 52;
+          var iw = W - ml - mr, ih = H - mt - mb;
+          function X(i) { return ml + (xs.length > 1 ? (i * iw) / (xs.length - 1) : iw / 2); }
+          function Y(v) { return mt + ih - ih * v; }
+          var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="' + o.aria + '">';
+          [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+            s += '<line x1="' + ml + '" y1="' + Y(g) + '" x2="' + (ml + iw) + '" y2="' + Y(g) + '" stroke="#dee2e6"/>';
+            s += '<text x="' + (ml - 5) + '" y="' + (Y(g) + 3) + '" font-size="10" text-anchor="end" fill="#495057">' + Math.round(g * 100) + "%</text>";
+          });
+          if (o.ref != null) {
+            s += '<line x1="' + ml + '" y1="' + Y(o.ref) + '" x2="' + (ml + iw) + '" y2="' + Y(o.ref) + '" stroke="#6c757d" stroke-dasharray="4 3"/>';
+            s += '<text x="' + (ml + iw) + '" y="' + (Y(o.ref) - 3) + '" font-size="10" text-anchor="end" fill="#6c757d">' + o.refLabel + "</text>";
+          }
+          xs.forEach(function (x, i) {
+            s += '<text x="' + X(i) + '" y="' + (mt + ih + 13) + '" font-size="10" text-anchor="middle" fill="#495057">' + x + "</text>";
+          });
+          s += '<text x="' + (ml + iw / 2) + '" y="' + (mt + ih + 28) + '" font-size="11" text-anchor="middle" fill="#495057">' + o.xLabel + "</text>";
+          series.forEach(function (sr, k) {
+            var pts = sr.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
+            s += '<polyline points="' + pts + '" fill="none" stroke="' + sr.color + '" stroke-width="2"/>';
+            sr.values.forEach(function (v, i) {
+              s += '<circle cx="' + X(i) + '" cy="' + Y(v) + '" r="3" fill="' + sr.color + '"><title>' + sr.name + ", L = " + xs[i] + ": " + pct(v) + "</title></circle>";
+            });
+            var lx = ml + k * 150;
+            s += '<line x1="' + lx + '" y1="' + (H - 8) + '" x2="' + (lx + 16) + '" y2="' + (H - 8) + '" stroke="' + sr.color + '" stroke-width="2"/>';
+            s += '<text x="' + (lx + 20) + '" y="' + (H - 5) + '" font-size="10" fill="#495057">' + sr.name + "</text>";
+          });
+          return s + "</svg>";
+        }
+
+        var LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+
+        /* ============================================================
+           Section 3 — statistical comparison
+           ============================================================ */
+        async function runCompare() {
+          var out = $("cmpOut");
+          try {
+            var text = $("corpus").value;
+            var plainCounts = letterCounts(text);
+            if (sumArr(plainCounts) < 200) { out.innerHTML = '<p class="text-danger small">The corpus is too short.</p>'; return; }
+            var shift = Number($("shiftIn").value);
+            if (!Number.isInteger(shift) || shift < 0 || shift > 25) shift = 7;
+            var caeCounts = letterCounts(caesar(text, shift));
+
+            var bytes = enc.encode(text);
+            var q = ecc ? ecc.Q : mulPoint(12345n, G);
+            var e = await eccEncrypt(bytes, q, ecc ? ecc.r : 987654321987n);
+            var hist = new Array(256).fill(0);
+            e.C2.forEach(function (b) { hist[b]++; });
+
+            var mt = '<div class="table-responsive mb-3"><table class="table table-sm table-striped small mb-0"><thead><tr><th>Text</th><th>Symbols</th><th>Entropy</th><th>Max</th><th>Index of coincidence</th><th>Uniform value</th></tr></thead><tbody>';
+            mt += '<tr><td>Plaintext</td><td>' + sumArr(plainCounts) + ' letters</td><td class="mono">' + entropy(plainCounts).toFixed(3) + ' bits</td><td class="mono">4.700</td><td class="mono">' + coincidence(plainCounts).toFixed(4) + '</td><td class="mono">0.0385</td></tr>';
+            mt += '<tr><td>Caesar ciphertext (s = ' + shift + ')</td><td>' + sumArr(caeCounts) + ' letters</td><td class="mono">' + entropy(caeCounts).toFixed(3) + ' bits</td><td class="mono">4.700</td><td class="mono">' + coincidence(caeCounts).toFixed(4) + '</td><td class="mono">0.0385</td></tr>';
+            mt += '<tr><td>Toy ECC ciphertext C₂</td><td>' + e.C2.length + ' bytes</td><td class="mono">' + entropy(hist).toFixed(3) + ' bits</td><td class="mono">8.000</td><td class="mono">' + coincidence(hist).toFixed(4) + '</td><td class="mono">0.0039</td></tr>';
+            mt += "</tbody></table></div>";
+            mt += '<p class="small text-secondary">The entropy of a finite sample is slightly below its maximum even for perfectly random bytes (for ' + e.C2.length + ' bytes about ' + (8 - 255 / (2 * Math.LN2 * e.C2.length)).toFixed(3) + ' bits). The Caesar ciphertext has exactly the same entropy and index of coincidence as the plaintext, because the histogram is only rotated. The ECC ciphertext is flat.</p>';
+
+            var asPct = function (c) { var n = sumArr(c); return c.map(function (v) { return v / n; }); };
+            var lo = { yMax: 0.14, fmt: function (v) { return (100 * v).toFixed(0) + "%"; }, label: function (i) { return LETTERS[i]; }, tick: function (i) { return LETTERS[i]; }, every: 1 };
+            var h = mt + '<div class="row g-3 mb-2">';
+            h += '<div class="col-lg-4"><div class="chart-box">' + barChart(asPct(plainCounts), Object.assign({ aria: "Letter frequencies of the plaintext", xLabel: "plaintext letter" }, lo)) + "</div></div>";
+            h += '<div class="col-lg-4"><div class="chart-box">' + barChart(asPct(caeCounts), Object.assign({ aria: "Letter frequencies of the Caesar ciphertext", xLabel: "ciphertext letter (shift " + shift + ")", color: "#6c757d" }, lo)) + "</div></div>";
+            h += '<div class="col-lg-4"><div class="chart-box">' + barChart(hist, {
+              aria: "Byte histogram of the ECC ciphertext", xLabel: "byte value (ECC ciphertext)", color: "#198754",
+              ref: e.C2.length / 256, refLabel: "uniform",
+              fmt: function (v) { return String(Math.round(v)); }, label: function (i) { return "byte " + i; }, every: 32
+            }) + "</div></div></div>";
+            out.innerHTML = h;
+          } catch (ex) {
+            out.innerHTML = '<p class="text-danger small">' + esc(ex.message || ex) + "</p>";
+          }
+        }
+
+        /* ============================================================
+           Section 4 — language model and attacks on the Caesar cipher
+           ============================================================ */
+        function lettersOnly(s) {
+          var o = "";
+          for (var i = 0; i < s.length; i++) {
+            var x = s.charCodeAt(i) | 32;
+            if (x >= 97 && x <= 122) o += String.fromCharCode(x);
+          }
+          return o;
+        }
+
+        function buildModel(text) {
+          var L = lettersOnly(text), i;
+          var uni = new Array(26).fill(0), bi = new Float64Array(26 * 26), tri = new Float64Array(26 * 26 * 26);
+          for (i = 0; i < L.length; i++) {
+            var a = L.charCodeAt(i) - 97;
+            uni[a]++;
+            if (i >= 1) bi[(L.charCodeAt(i - 1) - 97) * 26 + a]++;
+            if (i >= 2) tri[((L.charCodeAt(i - 2) - 97) * 26 + (L.charCodeAt(i - 1) - 97)) * 26 + a]++;
+          }
+          var n = L.length, p = uni.map(function (c) { return (c + 0.5) / (n + 13); });
+          var words = {}, toks = text.toLowerCase().split(/[^a-z]+/).filter(function (w) { return w.length >= 2; });
+          toks.forEach(function (w) { words[w] = (words[w] || 0) + 1; });
+          var top = Object.keys(words).sort(function (x, y) { return words[y] - words[x]; }).slice(0, 60);
+          var set = {};
+          top.forEach(function (w) { set[w] = 1; });
+          return { n: n, uni: uni, p: p, bi: bi, tri: tri, words: set, topWords: top };
+        }
+
+        /* scores for the 26 candidate shifts; "best" is lowest chi2 or highest score */
+        function scoreChi(cipher, model) {
+          var cc = letterCounts(cipher), n = sumArr(cc), out = [];
+          for (var s = 0; s < 26; s++) {
+            var x = 0;
+            for (var i = 0; i < 26; i++) {
+              var o = cc[(i + s) % 26], e = n * model.p[i];
+              x += ((o - e) * (o - e)) / e;
+            }
+            out.push(x);
+          }
+          return out;
+        }
+        function scoreNgram(cipher, model, order) {
+          var L = lettersOnly(cipher), out = [], alpha = 0.5;
+          for (var s = 0; s < 26; s++) {
+            var d = new Array(L.length), sc = 0, i;
+            for (i = 0; i < L.length; i++) d[i] = (L.charCodeAt(i) - 97 - s + 26) % 26;
+            for (i = order - 1; i < d.length; i++) {
+              var num, den;
+              if (order === 2) {
+                var c0 = d[i - 1], row = 0;
+                num = model.bi[c0 * 26 + d[i]];
+                for (var j = 0; j < 26; j++) row += model.bi[c0 * 26 + j];
+                den = row;
+              } else {
+                var base = (d[i - 2] * 26 + d[i - 1]) * 26, rw = 0;
+                num = model.tri[base + d[i]];
+                for (var k = 0; k < 26; k++) rw += model.tri[base + k];
+                den = rw;
+              }
+              sc += Math.log((num + alpha) / (den + 26 * alpha));
+            }
+            out.push(sc);
+          }
+          return out;
+        }
+        function scoreWords(cipher, model) {
+          var out = [];
+          for (var s = 0; s < 26; s++) {
+            var toks = caesar(cipher, -s).toLowerCase().split(/[^a-z]+/), c = 0;
+            toks.forEach(function (w) { if (model.words[w]) c++; });
+            out.push(c);
+          }
+          return out;
+        }
+        function argBest(arr, higher, r) {
+          var best = higher ? -Infinity : Infinity, idx = [];
+          arr.forEach(function (v, i) {
+            if (higher ? v > best : v < best) { best = v; idx = [i]; }
+            else if (v === best) idx.push(i);
+          });
+          return idx.length === 1 || !r ? idx[0] : idx[Math.floor(r() * idx.length)];
+        }
+
+        var model = null, modelText = "";
+        function getModel(fullCorpus) {
+          var t = $("corpus").value;
+          var use = fullCorpus ? t : t.slice(0, Math.floor(t.length * 0.7));
+          var key = (fullCorpus ? "F" : "T") + use;
+          if (!model || model.key !== key) { model = buildModel(use); model.key = key; }
+          return model;
+        }
+
+        function updateCorpusInfo() {
+          var t = $("corpus").value, n = sumArr(letterCounts(t));
+          $("corpusInfo").textContent = n + " letters, " + t.length + " characters. Training part: " +
+            sumArr(letterCounts(t.slice(0, Math.floor(t.length * 0.7)))) + " letters; held-out test part: " +
+            sumArr(letterCounts(t.slice(Math.floor(t.length * 0.7)))) + " letters.";
+        }
+
+        function analyze() {
+          var out = $("analyzeOut"), c = $("cipherIn").value;
+          if (sumArr(letterCounts(c)) < 3) { out.innerHTML = '<p class="small text-danger">Enter a ciphertext with at least a few letters.</p>'; return; }
+          var m = getModel(true), order = Number($("ngramN").value);
+          var chi = scoreChi(c, m), ng = scoreNgram(c, m, order), wd = scoreWords(c, m);
+          var bChi = argBest(chi, false), bNg = argBest(ng, true), bWd = argBest(wd, true);
+          var cc = letterCounts(c), n = sumArr(cc);
+          var rel = cc.map(function (v) { return v / n; });
+          var eng = m.uni.map(function (v) { return v / m.n; });
+          var lo = { yMax: 0.16, fmt: function (v) { return (100 * v).toFixed(0) + "%"; }, label: function (i) { return LETTERS[i]; }, tick: function (i) { return LETTERS[i]; }, every: 1 };
+          var h = '<div class="row g-3 mb-2">';
+          h += '<div class="col-lg-4"><div class="chart-box">' + barChart(rel, Object.assign({ aria: "Letter frequencies of the ciphertext", xLabel: "ciphertext letters", color: "#6c757d" }, lo)) + "</div></div>";
+          h += '<div class="col-lg-4"><div class="chart-box">' + barChart(eng, Object.assign({ aria: "Letter frequencies of the corpus", xLabel: "corpus (English) letters" }, lo)) + "</div></div>";
+          h += '<div class="col-lg-4"><div class="chart-box">' + barChart(chi, {
+            aria: "Chi-square for each candidate shift", xLabel: "candidate shift s (lowest χ² wins)", hi: bChi, color: "#0d6efd",
+            fmt: function (v) { return v.toFixed(0); }, label: function (i) { return "s = " + i; }, every: 5
+          }) + "</div></div></div>";
+          h += '<div class="table-responsive"><table class="table table-sm table-striped small mb-2"><thead><tr><th>Method</th><th>Best shift</th><th>Decryption</th></tr></thead><tbody>';
+          [["Letter frequency (χ²)", bChi], ["Bigram/trigram log-likelihood (n = " + order + ")", bNg], ["Exhaustive search + common words (" + wd[bWd] + " matches)", bWd]].forEach(function (r) {
+            var t = caesar(c, -r[1]);
+            h += "<tr><td>" + r[0] + '</td><td class="mono">' + r[1] + '</td><td class="mono text-break">' + esc(t.length > 160 ? t.slice(0, 160) + "…" : t) + "</td></tr>";
+          });
+          h += "</tbody></table></div>";
+          h += '<p class="small text-secondary mb-0">' + (bChi === bNg && bNg === bWd ? "All three methods agree on the key." : "The methods disagree: the ciphertext is probably too short for some of them.") + " Hidden shift of the default ciphertext: " + (hiddenShift == null ? "unknown" : hiddenShift) + ".</p>";
+          out.innerHTML = h;
+        }
+
+        var hiddenShift = null;
+        function setDefaultCipher() {
+          var t = $("corpus").value, cut = Math.floor(t.length * 0.7);
+          var test = t.slice(cut), idx = [], i;
+          for (i = 0; i < test.length; i++) if (/[a-z]/i.test(test[i])) idx.push(i);
+          var start = idx[Math.floor(idx.length * 0.2)], endI = idx[Math.min(idx.length - 1, Math.floor(idx.length * 0.2) + 120)];
+          var piece = test.slice(start, endI + 1).replace(/\s+/g, " ");
+          hiddenShift = 11;
+          $("cipherIn").value = caesar(piece, hiddenShift);
+        }
+
+        var running = false;
+        async function runCaesarExp() {
+          if (running) return;
+          var err = $("errC"), prog = $("progC"), out = $("caesarExpOut");
+          err.textContent = "";
+          var T = Number($("trials").value), seed = Number($("seed4").value), order = Number($("ngramN").value);
+          if (!Number.isInteger(T) || T < 20 || T > 1000) { err.textContent = "Trials must be an integer between 20 and 1000."; return; }
+          if (!Number.isInteger(seed) || seed < 0) { err.textContent = "The seed must be a non-negative integer."; return; }
+          var t = $("corpus").value, cut = Math.floor(t.length * 0.7), test = t.slice(cut), idx = [], i;
+          for (i = 0; i < test.length; i++) if (/[a-z]/i.test(test[i])) idx.push(i);
+          var lengths = [5, 10, 20, 30, 50, 100, 200, 500].filter(function (l) { return l <= idx.length - 5; });
+          if (sumArr(letterCounts(t.slice(0, cut))) < 1500 || lengths.length < 4) {
+            err.textContent = "The corpus is too short: at least about 2500 letters are needed (1500 for training, the rest for testing).";
+            return;
+          }
+          running = true;
+          $("bRunC").disabled = true;
+          try {
+            var m = getModel(false), r = rng(seed);
+            var names = ["Letter frequency (χ²)", "n-gram scoring", "Exhaustive + words"], cols = ["#0d6efd", "#198754", "#fd7e14"];
+            var succ = [[], [], []];
+            for (var li = 0; li < lengths.length; li++) {
+              var L = lengths[li], ok = [0, 0, 0];
+              for (var trial = 0; trial < T; trial++) {
+                var st = Math.floor(r() * (idx.length - L + 1));
+                var piece = test.slice(idx[st], idx[st + L - 1] + 1);
+                var s = 1 + Math.floor(r() * 25), c = caesar(piece, s);
+                if (argBest(scoreChi(c, m), false, r) === s) ok[0]++;
+                if (argBest(scoreNgram(c, m, order), true, r) === s) ok[1]++;
+                if (argBest(scoreWords(c, m), true, r) === s) ok[2]++;
+                if (trial % 20 === 0) { prog.textContent = "L = " + L + ", trial " + (trial + 1) + " / " + T; await tick(); }
+              }
+              for (var k = 0; k < 3; k++) succ[k].push(ok[k] / T);
+            }
+            var h = '<div class="chart-box mb-3">' + lineChart(lengths, names.map(function (n, k) { return { name: n, color: cols[k], values: succ[k] }; }), {
+              aria: "Key recovery success rate against ciphertext length", xLabel: "ciphertext length L (letters)", ref: 1 / 26, refLabel: "random guess 3.8%"
+            }) + "</div>";
+            h += '<div class="table-responsive"><table class="table table-sm table-striped small mb-2"><thead><tr><th>Length L</th>' + names.map(function (n) { return "<th>" + n + "</th>"; }).join("") + "</tr></thead><tbody>";
+            lengths.forEach(function (L, j) {
+              h += '<tr><td class="mono">' + L + "</td>" + [0, 1, 2].map(function (k) { return '<td class="mono">' + pct(succ[k][j]) + "</td>"; }).join("") + "</tr>";
+            });
+            h += "</tbody></table></div>";
+            var se = Math.sqrt(0.25 / T);
+            h += '<p class="small text-secondary mb-0">' + T + " trials per length (n-gram order " + order + ", seed " + seed + "). A rate near 50% has a standard error of about " + pct(se) + ". ";
+            h += "Short ciphertexts fail because the observed counts are too noisy: with 5 letters most of the 26 decryptions look equally plausible. All three methods improve with length, and the statistical methods reach almost certain recovery with a few dozen letters. The word method needs enough letters to contain several common words; n-grams use more of the structure of the language and usually need fewer letters than single-letter counts.</p>";
+            out.innerHTML = h;
+            prog.textContent = "";
+          } catch (ex) {
+            err.textContent = ex.message || String(ex);
+          } finally {
+            running = false;
+            $("bRunC").disabled = false;
+          }
+        }
+
+        /* ============================================================
+           Section 5 — attacks on the toy ECC scheme
+           ============================================================ */
+        async function bruteForce(Q, lim, onProg) {
+          var R = null, steps = 0, qx = Q[0], d = 0n, lim2 = Number(lim);
+          var t0 = performance.now();
+          for (var i = 1; i < lim2; i++) {
+            R = jaddA(R, G);
+            steps++;
+            if (R) {
+              var z2 = md(R[2] * R[2]);
+              if (R[0] === md(qx * z2)) {
+                var aff = toAffine(R);
+                if (samePt(aff, Q)) { d = BigInt(i); break; }
+              }
+            }
+            if (i % 4000 === 0) { if (onProg) onProg(i); await tick(); }
+          }
+          return { d: d, steps: steps, ms: performance.now() - t0 };
+        }
+
+        async function bsgs(Q, K) {
+          var t0 = performance.now(), m = 1 << Math.ceil(K / 2), j, ops = 0;
+          var jac = [], cur = null;
+          for (j = 1; j < m; j++) { cur = jaddA(cur, G); jac.push(cur); ops++; }
+          var aff = batchAffine(jac), table = new Map();
+          for (j = 1; j < m; j++) table.set(aff[j - 1][0], j);
+          var negmG = negPt(mulPoint(BigInt(m), G));
+          var gam = [Q[0], Q[1], 1n], found = 0n, lim = Math.ceil(Math.pow(2, K) / m) + 1;
+          for (var i = 0; i <= lim && !found; i++) {
+            var a = toAffine(gam);
+            if (!a) { found = BigInt(i * m); break; }
+            var hit = table.get(a[0]);
+            if (hit !== undefined) {
+              var cand = [BigInt(i * m + hit), BigInt(i * m - hit)];
+              for (var c = 0; c < 2; c++) {
+                if (cand[c] > 0n && samePt(mulPoint(cand[c], G), Q)) { found = cand[c]; break; }
+              }
+              if (found) break;
+            }
+            gam = jaddA(gam, negmG);
+            ops++;
+            if (i % 2000 === 0) await tick();
+          }
+          return { d: found, ops: ops, m: m, ms: performance.now() - t0 };
+        }
+
+        async function attack() {
+          var out = $("attackOut"), prog = $("progA");
+          if (!ecc) { out.innerHTML = '<p class="small text-danger">Fix the inputs of section 1 first.</p>'; return; }
+          $("bAttack").disabled = true;
+          try {
+            var K = ecc.K, Q = ecc.Q, h = "";
+            var sizeTxt = "2^" + K + " = " + ecc.lim;
+            var bf = null;
+            if (K <= 20) {
+              prog.textContent = "Exhaustive search…";
+              bf = await bruteForce(Q, ecc.lim, function (i) { prog.textContent = "Exhaustive search: " + i + " / " + ecc.lim; });
+            }
+            prog.textContent = "Baby-step giant-step…";
+            await tick();
+            var bg = await bsgs(Q, K);
+            h += '<div class="table-responsive"><table class="table table-sm table-striped small mb-2"><thead><tr><th>Method</th><th>Recovered d</th><th>Group operations</th><th>Time</th><th>Memory</th></tr></thead><tbody>';
+            h += "<tr><td>Exhaustive search</td>" + (bf
+              ? '<td class="mono">' + bf.d + (bf.d === ecc.d ? " ✓" : " ✗") + '</td><td class="mono">' + bf.steps + '</td><td class="mono">' + bf.ms.toFixed(0) + ' ms</td><td>O(1)</td></tr>'
+              : '<td colspan="4" class="text-secondary">skipped: ' + sizeTxt + " steps are too many for the browser (limit K ≤ 20)</td></tr>");
+            h += "<tr><td>Baby-step giant-step (m = " + bg.m + ')</td><td class="mono">' + bg.d + (bg.d === ecc.d ? " ✓" : " ✗") + '</td><td class="mono">' + bg.ops + '</td><td class="mono">' + bg.ms.toFixed(0) + ' ms</td><td>' + bg.m + " points</td></tr>";
+            h += "</tbody></table></div>";
+            if (bg.d === ecc.d) {
+              var dd = await eccDecrypt(ecc.C1, ecc.C2, bg.d);
+              h += '<p class="small mb-0"><strong>Decryption with the recovered key:</strong> <span class="mono">' + esc(dec.decode(dd.m)) + "</span></p>";
+            } else {
+              h += '<p class="small text-danger mb-0">The attack did not recover the key.</p>';
+            }
+            out.innerHTML = h;
+            prog.textContent = "";
+          } catch (ex) {
+            out.innerHTML = '<p class="small text-danger">' + esc(ex.message || ex) + "</p>";
+            prog.textContent = "";
+          } finally {
+            $("bAttack").disabled = false;
+          }
+        }
+
+        function sci(log10) {
+          var e = Math.floor(log10), mnt = Math.pow(10, log10 - e);
+          return mnt.toFixed(1) + " × 10^" + e;
+        }
+
+        async function scaling() {
+          var out = $("scaleOut"), prog = $("progS");
+          $("bScale").disabled = true;
+          try {
+            var r = rng(7), Ks = [8, 10, 12, 14, 16], rows = [], tOp = 0;
+            for (var ki = 0; ki < Ks.length; ki++) {
+              var K = Ks[ki], bfS = 0, bgO = 0, bfMs = 0, bgMs = 0, reps = 5;
+              for (var t = 0; t < reps; t++) {
+                var d = BigInt(1 + Math.floor(r() * (Math.pow(2, K) - 1))), Q = mulPoint(d, G);
+                prog.textContent = "K = " + K + ", key " + (t + 1) + " / " + reps;
+                var bf = await bruteForce(Q, 1n << BigInt(K));
+                var bg = await bsgs(Q, K);
+                if (bf.d !== d || bg.d !== d) throw new Error("An attack failed at K = " + K + ".");
+                bfS += bf.steps; bfMs += bf.ms; bgO += bg.ops + 1; bgMs += bg.ms;
+              }
+              rows.push({ K: K, bf: bfS / reps, bg: bgO / reps, bfMs: bfMs / reps, bgMs: bgMs / reps });
+              if (K === 16) tOp = bfMs / reps / (bfS / reps) / 1000; /* seconds per addition */
+            }
+            var h = '<div class="table-responsive"><table class="table table-sm table-striped small mb-3"><thead><tr><th>K</th><th>Exhaustive: mean steps</th><th>expected 2<sup>K−1</sup></th><th>BSGS: operations</th><th>≈ 2·2<sup>K/2</sup></th><th>Exhaustive time</th><th>BSGS time</th></tr></thead><tbody>';
+            rows.forEach(function (x) {
+              h += '<tr><td class="mono">' + x.K + '</td><td class="mono">' + Math.round(x.bf) + '</td><td class="mono">' + Math.pow(2, x.K - 1) + '</td><td class="mono">' + Math.round(x.bg) + '</td><td class="mono">' + Math.round(2 * Math.pow(2, x.K / 2)) + '</td><td class="mono">' + x.bfMs.toFixed(0) + ' ms</td><td class="mono">' + x.bgMs.toFixed(0) + " ms</td></tr>";
+            });
+            h += "</tbody></table></div>";
+            h += '<div class="chart-box mb-3">' + barChart(rows.map(function (x) { return Math.log2(x.bf); }).concat(rows.map(function (x) { return Math.log2(x.bg); })), {
+              aria: "log2 of the number of operations for exhaustive search and BSGS",
+              xLabel: "K = 8, 10, 12, 14, 16 (exhaustive search, then BSGS)", color: "#0d6efd",
+              fmt: function (v) { return v.toFixed(1); }, label: function (i) { return (i < 5 ? "exhaustive" : "BSGS") + ", K = " + Ks[i % 5] + ": log2 ops"; },
+              tick: function (i) { return (i < 5 ? "E" : "B") + Ks[i % 5]; }, every: 1
+            }) + "</div>";
+            var perOp = tOp || 2e-5;
+            var secYear = 3.156e7;
+            h += '<p class="small mb-1">Measured speed: about ' + (perOp * 1e6).toFixed(0) + " µs per point addition in this browser. Extrapolation to a 256-bit key space:</p>";
+            h += '<ul class="small mb-0"><li>exhaustive search (2²⁵⁵ additions): ≈ ' + sci(255 * Math.log10(2) + Math.log10(perOp / secYear)) + " years;</li>";
+            h += "<li>baby-step giant-step or Pollard's rho (about 2¹²⁸ operations; BSGS also needs 2¹²⁸ stored points): ≈ " + sci(128 * Math.log10(2) + Math.log10(perOp / secYear)) + " years, even with this unrealistically good starting speed. For comparison the universe is about 1.4 × 10^10 years old.</li></ul>";
+            out.innerHTML = h;
+            prog.textContent = "";
+          } catch (ex) {
+            out.innerHTML = '<p class="small text-danger">' + esc(ex.message || ex) + "</p>";
+            prog.textContent = "";
+          } finally {
+            $("bScale").disabled = false;
+          }
+        }
+
+        /* ============================================================
+           Wiring and start-up
+           ============================================================ */
+        var timer = null;
+        async function refreshAll() {
+          await runEcc();
+          runCaesar();
+          await runCompare();
+        }
+        function schedule() {
+          clearTimeout(timer);
+          timer = setTimeout(refreshAll, 300);
+        }
+        ["msg", "kBits", "dIn", "rIn"].forEach(function (id) { $(id).addEventListener("input", schedule); });
+        $("shiftIn").addEventListener("input", runCaesar);
+        $("corpus").addEventListener("input", function () { updateCorpusInfo(); model = null; });
+        $("bAnalyze").addEventListener("click", analyze);
+        $("bUseC").addEventListener("click", function () {
+          if (lastCaesar) { $("cipherIn").value = lastCaesar; hiddenShift = Number($("shiftIn").value); analyze(); }
+        });
+        $("bRunC").addEventListener("click", runCaesarExp);
+        $("bAttack").addEventListener("click", attack);
+        $("bScale").addEventListener("click", scaling);
+
+        updateCorpusInfo();
+        setDefaultCipher();
+        (async function () {
+          await refreshAll();
+          analyze();
+          await tick();
+          await runCaesarExp();
+          await attack();
+        })();
+      })();
+    </script>
+  </body>
+</html>
