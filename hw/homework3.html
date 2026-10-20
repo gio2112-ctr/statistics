@@ -1,27 +1,337 @@
-<div class="accordion-item">
-  <h2 class="accordion-header">
-    <button
-      class="accordion-button collapsed"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#collapseThree"
-      aria-expanded="false"
-      aria-controls="collapseThree"
-    >
-      HW 3 — Toy ECC encryption vs the Caesar cipher
-    </button>
-  </h2>
-  <div
-    id="collapseThree"
-    class="accordion-collapse collapse"
-    data-bs-parent="#accordionExample"
-  >
-    <div class="accordion-body">
-      Toy ECC encryption, Caesar cipher, statistical cryptanalysis and key-space attacks.
-      <br /><br />
-      <p>
-        <a href="hw/homework3.html" class="link-secondary link-opacity-75">Apri la pagina →</a>
-      </p>
-    </div>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <title>HW 3 — Toy ECC encryption versus the Caesar cipher</title>
+    <style>
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .viz-svg text {
+        font-family: system-ui, sans-serif;
+      }
+      .chart-box {
+        background: #fff;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+      }
+      pre.mono {
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body class="bg-body-secondary">
+    <div class="container-xl py-4">
+      <a
+        href="../index.html"
+        class="link-secondary link-opacity-75 d-inline-block mb-2"
+        >← Back to the homework list</a
+      >
+
+      <header class="mt-3 mb-4">
+        <p
+          class="text-uppercase text-secondary fw-semibold small mb-1"
+          style="letter-spacing: 0.08em"
+        >
+          HW 3 · Statistics · A.Y. 2026/2027
+        </p>
+        <h1 class="display-5">Toy ECC Encryption versus the Caesar Cipher</h1>
+        <p class="lead">
+          Encryption, statistical cryptanalysis and attacks on a restricted key
+          space
+        </p>
+      </header>
+
+      <noscript>
+        <div class="alert alert-warning">
+          This page needs JavaScript to run the experiments.
+        </div>
+      </noscript>
+
+      <!-- ===================== NOTES ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Notes</div>
+        <div class="card-body">
+          <p>
+            This homework compares two encryption schemes that sit at opposite
+            ends of the spectrum: the Caesar cipher (a 26-key symmetric
+            substitution) and a toy elliptic-curve scheme on
+            <span class="mono">secp256k1</span> whose private key is
+            deliberately limited to a small range, so that attacks can be run
+            in a browser. The same message is encrypted with both (sections 1
+            and 2) and the schemes are compared (section 3). Then each scheme
+            is attacked with the method that fits it: statistics of the
+            language for the Caesar cipher (section 4) and a search of the key
+            space for the toy ECC scheme (section 5). Section 6 discusses the
+            differences and the limits of both attacks.
+          </p>
+          <p class="mb-0 small text-secondary">
+            The toy scheme is an ECIES-like hybrid construction (an elliptic
+            curve key agreement followed by a hash-based keystream). It is
+            written for learning and is not safe to use.
+          </p>
+        </div>
+      </section>
+
+      <!-- ===================== PART 1 ===================== -->
+      <section class="card mb-4" id="part1">
+        <div class="card-header fw-semibold">1 · Toy elliptic-curve encryption on secp256k1</div>
+        <div class="card-body">
+          <p>
+            The curve is <span class="mono">y² = x³ + 7</span> over the
+            256-bit prime field of secp256k1, with the standard base point
+            <span class="mono">G</span> of prime order
+            <span class="mono">n ≈ 2²⁵⁶</span>. As in the previous homework a
+            public key is <span class="mono">Q = dG</span>, but here the
+            private key <span class="mono">d</span> is restricted to
+            <span class="mono">1 ≤ d &lt; 2<sup>K</sup></span>.
+          </p>
+          <ol class="small">
+            <li>
+              <strong>Key generation (receiver).</strong> Choose the private
+              key <span class="mono">d</span> and publish
+              <span class="mono">Q = dG</span>.
+            </li>
+            <li>
+              <strong>Encryption (sender).</strong> Choose a fresh ephemeral
+              secret <span class="mono">r</span>. Send
+              <span class="mono">C₁ = rG</span>. Compute the shared point
+              <span class="mono">S = rQ</span> (it equals
+              <span class="mono">rdG</span>), derive a keystream
+              <span class="mono">KS = SHA-256(S.x ‖ 0) ‖ SHA-256(S.x ‖ 1) ‖ …</span>
+              and send <span class="mono">C₂ = m ⊕ KS</span>.
+            </li>
+            <li>
+              <strong>Decryption (receiver).</strong> Compute
+              <span class="mono">S = dC₁</span> (it equals
+              <span class="mono">drG</span>, the same point), derive the same
+              keystream and recover <span class="mono">m = C₂ ⊕ KS</span>.
+            </li>
+          </ol>
+          <p class="small text-secondary">
+            Roles of the keys: <span class="mono">d</span> is the long-term
+            secret and never leaves the receiver; <span class="mono">Q</span>
+            is public and lets anyone encrypt; <span class="mono">r</span> is
+            a one-time secret of the sender that makes every encryption
+            different; <span class="mono">S</span> is the shared secret that
+            only the two ends can compute.
+          </p>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label for="msg" class="form-label">Message (used for both schemes)</label>
+              <input id="msg" type="text" class="form-control" value="Attack at dawn, meet at the old bridge." />
+            </div>
+            <div class="col-6 col-md-2">
+              <label for="kBits" class="form-label">Key bits K</label>
+              <input id="kBits" type="number" min="8" max="28" step="1" value="16" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="dIn" class="form-label">Private key d</label>
+              <input id="dIn" type="text" inputmode="numeric" value="51234" class="form-control mono" />
+            </div>
+            <div class="col-6 col-md-4">
+              <label for="rIn" class="form-label">Ephemeral secret r</label>
+              <input id="rIn" type="text" inputmode="numeric" value="987654321987" class="form-control mono" />
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-end">
+              <button id="bRand" type="button" class="btn btn-secondary w-100">Random d and r</button>
+            </div>
+          </div>
+          <div id="eccErr" class="text-danger small mb-2" role="alert"></div>
+          <div id="eccOut"></div>
+        </div>
+      </section>
+
+      <!-- ===================== PART 2 ===================== -->
+      <section class="card mb-4" id="part2">
+        <div class="card-header fw-semibold">2 · The Caesar cipher</div>
+        <div class="card-body">
+          <p>
+            Each letter is moved <span class="mono">s</span> places forward in
+            the alphabet (wrapping around after Z):
+            <span class="mono">c = (m + s) mod 26</span>. Decryption moves it
+            back: <span class="mono">m = (c − s) mod 26</span>. The key
+            <span class="mono">s</span> is shared and secret. Case, spaces and
+            punctuation are left unchanged.
+          </p>
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-6 col-md-3">
+              <label for="shiftIn" class="form-label">Shift s (0–25)</label>
+              <input id="shiftIn" type="number" min="0" max="25" step="1" value="7" class="form-control" />
+            </div>
+          </div>
+          <div id="caesarErr" class="text-danger small mb-2" role="alert"></div>
+          <div id="caesarOut"></div>
+        </div>
+      </section>
+
+      <!-- ===================== PART 3 ===================== -->
+      <section class="card mb-4" id="part3">
+        <div class="card-header fw-semibold">3 · Comparing the two schemes</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped small mb-3">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Toy ECC scheme</th>
+                  <th>Caesar cipher</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Kind</td>
+                  <td>Asymmetric: public <span class="mono">Q</span>, private <span class="mono">d</span></td>
+                  <td>Symmetric: one shared secret <span class="mono">s</span></td>
+                </tr>
+                <tr>
+                  <td>Encryption</td>
+                  <td><span class="mono">C₁ = rG</span>, <span class="mono">S = rQ</span>, <span class="mono">C₂ = m ⊕ KDF(S.x)</span></td>
+                  <td><span class="mono">c = (m + s) mod 26</span> letter by letter</td>
+                </tr>
+                <tr>
+                  <td>Decryption</td>
+                  <td><span class="mono">S = dC₁</span>, <span class="mono">m = C₂ ⊕ KDF(S.x)</span></td>
+                  <td><span class="mono">m = (c − s) mod 26</span></td>
+                </tr>
+                <tr>
+                  <td>Key space</td>
+                  <td><span class="mono">2<sup>K</sup></span> private keys here (K = 16 by default); about <span class="mono">2²⁵⁶</span> if properly configured</td>
+                  <td>26 keys (25 useful)</td>
+                </tr>
+                <tr>
+                  <td>Randomized?</td>
+                  <td>Yes: a fresh <span class="mono">r</span> gives a different ciphertext for the same message</td>
+                  <td>No: the same message always gives the same ciphertext</td>
+                </tr>
+                <tr>
+                  <td>Ciphertext size</td>
+                  <td>message length + 33 bytes (the point <span class="mono">C₁</span>)</td>
+                  <td>same as the message</td>
+                </tr>
+                <tr>
+                  <td>Statistical properties</td>
+                  <td>Output bytes look uniform: no letter structure survives</td>
+                  <td>Letter histogram of the plaintext, only rotated; the index of coincidence is unchanged</td>
+                </tr>
+                <tr>
+                  <td>Where the secrecy comes from</td>
+                  <td>Difficulty of finding <span class="mono">d</span> from <span class="mono">Q</span> (ECDLP) and of computing <span class="mono">S</span> from <span class="mono">Q</span> and <span class="mono">C₁</span>, if <span class="mono">d</span> is large</td>
+                  <td>Only the secrecy of <span class="mono">s</span>; the language itself leaks</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h2 class="h6">Measured on the text of the corpus in section 4</h2>
+          <div id="cmpOut"></div>
+        </div>
+      </section>
+
+      <!-- ===================== PART 4 ===================== -->
+      <section class="card mb-4" id="part4">
+        <div class="card-header fw-semibold">4 · Statistical cryptanalysis of the Caesar cipher</div>
+        <div class="card-body">
+          <p>
+            The attack uses a corpus of text in a known language (English).
+            From the corpus it learns the frequency of single letters, of pairs
+            and of triples, and the most common words. Given only a ciphertext,
+            it tries the 26 candidate keys and picks the one whose decryption
+            looks most like English. Three scoring methods are compared:
+            <strong>letter-frequency analysis</strong> (χ² against the English
+            letter distribution), <strong>n-gram scoring</strong> (log-likelihood
+            under a letter n-gram model) and <strong>exhaustive search with a
+            word test</strong> (count the common words in each of the 26
+            decryptions).
+          </p>
+
+          <label for="corpus" class="form-label">Corpus (you can replace it with a longer English text)</label>
+          <textarea id="corpus" class="form-control small mb-3" rows="8" spellcheck="false">Secrecy has always been a concern of people who govern, trade and fight. Long before computers existed, messengers carried letters that could fall into the wrong hands, and the writers of those letters looked for ways to make the words unreadable to anyone but the intended reader. The simplest idea is to replace every letter of the message with another letter according to a fixed rule. Julius Caesar is said to have used a shift of three places, so that each letter was replaced by the letter three positions further along in the alphabet. The method is easy to learn and easy to apply, and for a time it was probably good enough, because most enemies could not read at all, and those who could had no reason to suspect that an odd string of letters hid a message.
+
+The weakness of such a system is not hard to see once one looks at the text as a collection of numbers. In any language some letters are used far more often than others. In English the letter e appears about one time in eight, while the letters z, q and x are very rare. A substitution that replaces each letter by another one does not change how often each symbol appears, it only changes the name of the symbol. A reader who counts the letters of a long message will find that one symbol is much more frequent than the rest, and it is reasonable to guess that this symbol stands for the letter e. With a shift cipher a single correct guess reveals the whole key, because every other letter follows the same shift.
+
+Arab scholars understood this idea more than a thousand years ago. In the ninth century a philosopher wrote a treatise on how to decipher secret messages, and he explained that one should take a long sample of plain text, count the letters, and then compare the counts with those found in the secret message. This is perhaps the first clear use of statistics in the service of security. The principle is still alive today. Modern attackers do not usually count letters, but they do look for any regularity that separates the output of a system from pure noise, such as a bias in the bits of a key, a repeated value, or a pattern in the time that a server needs to answer.
+
+Better ciphers were invented to hide the frequencies. One can use several different alphabets in turn, so that the same letter of the text is replaced by different symbols at different positions. This flattens the counts, and it defeated analysts for several centuries. Yet even this idea eventually fell, when it was noticed that a repeated key makes the counts repeat as well, and that one can split the message into groups and treat each group as a simple shift cipher. The lesson is that every regularity in the key or in the language is a possible door for the attacker.
+
+Another way to describe the same facts uses the idea of entropy. If a text were made of letters chosen at random, each of the twenty six letters would be equally likely, and every letter would carry the same amount of information, a little less than five bits. Real language is far from this ideal. Because some letters are common and some are rare, and because certain letters tend to follow others, the average information per letter is much lower, usually estimated at about four bits when only single letters are counted and even less when longer patterns are taken into account. This gap between the maximum and the actual value is called redundancy, and it is exactly what an analyst uses. A cipher that preserves the redundancy of the language, as a shift cipher does, leaves the door open. A cipher that removes it, so that every byte of output is equally likely, leaves nothing to count.
+
+A useful number for this purpose is the index of coincidence, which is the probability that two letters picked at random from a text are the same. For a perfectly uniform text over twenty six letters the value is about one in twenty six, close to four percent. For English prose it is higher, about six and a half percent, because the common letters are picked more often. A shift of the alphabet does not change this value at all, since the counts are only moved from one letter to another. By contrast, when the output is a sequence of random bytes, the probability that two of them coincide is about one in two hundred and fifty six, and this figure does not depend on the message that was sent. The comparison of such simple numbers is often the first step in judging whether a system leaks information.
+
+Probability also tells us how long a message must be before the counts can be trusted. If we draw only ten letters from an English text, the number of times the letter e appears is a random quantity with a large spread, and it may easily be zero. If we draw a thousand letters, the relative frequency of every letter is close to its long term value, and the spread shrinks in proportion to the square root of the length. This is the same effect that makes a poll of ten people unreliable and a poll of a thousand people reasonably accurate. For the attacker, it means that the success of a frequency attack grows quickly with the amount of ciphertext, while for the defender it is a reminder that a method that works on long messages may fail badly on short ones.
+
+Finally, there is the question of how an analyst decides which candidate key is the best. One way is to compare the counts of the decrypted text with the expected counts by means of a distance, such as the chi square statistic. Another way is to give each candidate a score that estimates how likely the decrypted text would be if it were written in the language, using the probability of single letters, of pairs of letters, or of triples. Pairs and triples carry more information than single letters, because the English language is full of habits, such as the letter u after q, or the sequence t, h, e. A third way is to look for known words in each candidate, which works well for long texts but gives no information when the message is very short.
+
+Today the situation is quite different. A good cipher is expected to produce output that looks random, so that nothing about the plain text can be learned from the counts of the symbols, from their order, or from the length of the runs. The security of public key systems rests on a different kind of difficulty. Instead of hiding the statistics of a language, they depend on mathematical problems that nobody knows how to solve quickly, such as finding the discrete logarithm of a point on an elliptic curve. If the secret number is large enough, there are simply too many possibilities to try, and no known shortcut reduces the work to something practical. If the secret number is small, the same problem becomes easy, because a computer can test every possible value in a short time.
+
+It is therefore useful to compare the two worlds. In the shift cipher the key space is tiny, only twenty six values, but the attack that we describe does not even need to try all of them blindly, because the text itself betrays the answer. In a small elliptic curve system the ciphertext may look perfectly random, so there is no statistical clue at all, and the attacker has to search the key space. The first system fails because the language leaks, the second because the key space is too small. Both lessons are important for anyone who wants to understand why real systems use long keys, random numbers and carefully designed protocols.
+
+A student who wishes to explore these ideas can write a short program in a few hours. The program reads a long text, counts how many times each letter occurs, and stores the results as a table of probabilities. Then it takes a secret message, tries each of the twenty six possible shifts, and keeps the one whose letter counts look most like the table. The longer the message, the more reliable the answer. With a few hundred letters the result is almost always correct, while with only a handful of letters the counts are too noisy and the program may choose the wrong shift. Measuring how often this happens, for different lengths, turns an informal idea into an experiment with numbers that can be compared and discussed.</textarea>
+          <div id="corpusInfo" class="small text-secondary mb-4"></div>
+
+          <h2 class="h6">Break a ciphertext</h2>
+          <label for="cipherIn" class="form-label">Ciphertext (default: an excerpt encrypted with a hidden shift)</label>
+          <textarea id="cipherIn" class="form-control mono small mb-2" rows="3" spellcheck="false"></textarea>
+          <div class="mb-2">
+            <button id="bAnalyze" type="button" class="btn btn-secondary btn-sm">Analyze</button>
+            <button id="bUseC" type="button" class="btn btn-outline-secondary btn-sm">Use the ciphertext of section 2</button>
+          </div>
+          <div id="analyzeOut" class="mb-4"></div>
+
+          <h2 class="h6">Success rate against the length of the ciphertext</h2>
+          <p class="small">
+            The model is trained on the first 70% of the corpus. Each trial
+            takes a window of <em>L</em> letters from the remaining 30% (text
+            never seen in training), encrypts it with a random shift and tries
+            to recover the shift. Guessing at random would succeed 1 time in
+            26 (3.8%).
+          </p>
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-6 col-md-3">
+              <label for="trials" class="form-label">Trials per length</label>
+              <input id="trials" type="number" min="20" max="1000" step="10" value="200" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="seed4" class="form-label">Random seed</label>
+              <input id="seed4" type="number" min="0" step="1" value="1" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="ngramN" class="form-label">n-gram order</label>
+              <select id="ngramN" class="form-select">
+                <option value="2" selected>2 (bigrams)</option>
+                <option value="3">3 (trigrams)</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <button id="bRunC" type="button" class="btn btn-secondary w-100">Run experiment</button>
+            </div>
+          </div>
+          <div id="progC" class="small text-secondary mb-1"></div>
+          <div id="errC" class="text-danger small mb-2" role="alert"></div>
+          <div id="caesarExpOut"></div>
+        </div>
+      </section>
+
+      <!-- ===================== PART 5 ===================== -->
+      <section class="card mb-4" id="part5">
+        <div class="card-header fw-semibold">5 · Attacking the toy ECC scheme</div>
+        <div class="card-body">
+          <p>
+            The attacker knows the public key <span class="mono">Q</span> and
+            the base point <span class="mono">G</span> (both public) and knows
+            that <span class="mono">1 ≤ d &lt; 2<sup>K</sup></span>. No
+            property of the plaintext is used. Two searches are implemented,
+            and each candidate is checked directly against
+            <span class="mono">Q</span>:
+          </p>
+          <ul class="small">
+            <li>
+              <strong>Exhaustive search.</strong> Compute
+              <span class="mono">G, 2G, 3G, …</span> with one point addition
