@@ -159,8 +159,9 @@
             class="accordion-collapse collapse"
             data-bs-parent="#accordionExample">
             <div class="accordion-body">
-             Consider n systems and m attackers. Model the penetration process using a stochastic process with independent and identically distributed increments X₁, X₂, …, representing the penetration score at each step. Consider two possible models for the score
-              <br /><br />
+            Exercise 1. I derive Welford’s recurrences for the sum of squares and the variance, following Knuth’s approach for the mean. The core code is 3 lines, and it stays numerically accurate where the textbook formula fails. <br/>
+
+Exercise 2. m hackers attack n systems and get scores from 0 to 10. For each hacker, Welford gives the sampling mean and variance. Averaged over the hackers, they match μ and σ² (the variance only with the divisor n − 1), and their spread shrinks like 1/√n as n grows. The estimators are therefore unbiased and consistent, which is the basis of confidence intervals.
                <a href="hw/homework4.html" class="link-secondary link-opacity-75">Go to the HW4 →</a>
             </div>
           </div>
