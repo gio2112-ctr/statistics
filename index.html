@@ -185,9 +185,11 @@ Exercise 2. m hackers attack n systems and get scores from 0 to 10. For each hac
             class="accordion-collapse collapse"
             data-bs-parent="#accordionExample">
             <div class="accordion-body">
-            Exercise 1. I derive Welford’s recurrences for the sum of squares and the variance, following Knuth’s approach for the mean. The core code is 3 lines, and it stays numerically accurate where the textbook formula fails. <br/>
+           Exercise 1 – Riemann vs Lebesgue. I compare Riemann sums (partition of the domain, left and midpoint tags) with Lebesgue sums (partition of the range, weighted by the measure of the preimages, computed exactly or estimated from samples). I test them on smooth functions, jump functions, a corner, the unbounded 1/√x and sin(x)/x. Both constructions converge to the same value for every Riemann-integrable function. The midpoint rule is the best on smooth functions (order 2), while the left sum and the Lebesgue sums have order 1; the Lebesgue sum is the most natural for step functions, and for 1/√x all methods are slow (order 1/2). The Dirichlet function is not Riemann-integrable but has Lebesgue integral 0, since the rationals have measure zero. Thomae’s function is integrable in both senses, with integral 0.
 
-Exercise 2. m hackers attack n systems and get scores from 0 to 10. For each hacker, Welford gives the sampling mean and variance. Averaged over the hackers, they match μ and σ² (the variance only with the divisor n − 1), and their spread shrinks like 1/√n as n grows. The estimators are therefore unbiased and consistent, which is the basis of confidence intervals.
+<br/>
+
+Exercise 2 – Normal CDF. Φ(x) = ½(1 + erf(x/√2)) is not elementary: by Liouville’s theorem, the equation R′ − xR = 1 has no rational solution, so Φ must be computed numerically. I implement trapezoid and Simpson integration, the alternating and the positive power series of erf, the Abramowitz–Stegun approximation, and a hybrid method (positive series plus a continued fraction for the tails). I compare them with reference values from the web (68–95–99.7 rule table, OEIS). Simpson converges as N⁻⁴ and the trapezoid as N⁻². The positive series and the hybrid reach about 16 digits and are very fast, the alternating series suffers from cancellation for large |x|, and A&S gives about 7 digits at the lowest cost. The hybrid is the best choice, especially in the tails, where relative accuracy matters.
               <br/><br/>
                <a href="hw/homework5.html" class="link-secondary link-opacity-75">Go to the HW5 →</a>
             </div>
