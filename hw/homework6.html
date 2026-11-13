@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <title>HW 6 — Statistical independence and the chi-square test</title>
+    <style>
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .viz-svg text {
+        font-family: system-ui, sans-serif;
+      }
+      .chart-box {
+        background: #fff;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+      }
+      .eq {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92rem;
+        background: var(--bs-tertiary-bg);
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        overflow-x: auto;
+      }
+      pre.code {
+        background: #212529;
+        color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        overflow-x: auto;
+        margin: 0.5rem 0;
+      }
+      table.tight td,
+      table.tight th {
+        white-space: nowrap;
+      }
+      table.tight td.rowh,
+      table.tight th.rowh {
+        font-weight: 600;
+      }
+      table.tight tr.tot td,
+      table.tight td.tot {
+        font-weight: 600;
+        border-left: 1px solid var(--bs-border-color);
+      }
+      table.tight tr.tot td {
+        border-left: 0;
+        border-top: 2px solid var(--bs-border-color);
+      }
+    </style>
+  </head>
+  <body class="bg-body-secondary">
+    <div class="container-xl py-4">
+      <!-- <a
+        href="../index.html"
+        class="link-secondary link-opacity-75 d-inline-block mb-2"
+        >← Back to the homework list</a
+      > -->
+
+      <header class="mt-3 mb-4">
+        <!-- <p
+          class="text-uppercase text-secondary fw-semibold small mb-1"
+          style="letter-spacing: 0.08em"
+        >
+          HW 6 · Statistics · A.Y. 2026/2027
+        </p> -->
+        <h1 class="display-5">Statistical Independence</h1>
+        <p class="lead">
+          Contingency tables, expected frequencies and the chi-square test of independence
+        </p>
+      </header>
+
+      <noscript>
+        <div class="alert alert-warning">
+          This page needs JavaScript to run the experiments.
+        </div>
+      </noscript>
+
+      <!-- ===================== THEORY ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Theory · What independence means</div>
+        <div class="card-body">
+          <h2 class="h6">In probability</h2>
+          <p>
+            Two events A and B are independent if P(A ∩ B) = P(A)·P(B), equivalently P(A | B) = P(A) when P(B) &gt; 0:
+            knowing B does not change the probability of A. Two discrete random variables X and F are independent if
+            the same holds for every pair of values:
+          </p>
+          <div class="eq">P(X = x, F = f) = P(X = x)·P(F = f) &nbsp;for all x, f &nbsp;⇔&nbsp; P(F = f | X = x) = P(F = f) &nbsp;for all x, f</div>
+          <p>
+            In words: the conditional distribution of F is the same for every value of X, and it equals the marginal
+            distribution of F. For numerical variables, independence implies zero covariance, but the converse is false:
+            if X is symmetric around 0 and F = X², then Cov(X, F) = 0 although F is a function of X.
+            Independence is therefore a statement about the whole joint distribution, not only about linear correlation.
+          </p>
+
+          <h2 class="h6 mt-4">In a contingency table</h2>
+          <p>
+            A bivariate dataset (X, F) of N observations is summarised by the table of counts n<sub>ij</sub> (number of
+            observations with X = x<sub>i</sub> and F = f<sub>j</sub>), with row totals n<sub>i·</sub>, column totals
+            n<sub>·j</sub> and grand total N. The relative frequencies play the role of probabilities:
+          </p>
+          <div class="eq">
+            joint &nbsp;f<sub>ij</sub> = n<sub>ij</sub>/N<br />
+            marginal &nbsp;f<sub>i·</sub> = n<sub>i·</sub>/N, &nbsp;f<sub>·j</sub> = n<sub>·j</sub>/N<br />
+            conditional &nbsp;f(F = f<sub>j</sub> | X = x<sub>i</sub>) = n<sub>ij</sub>/n<sub>i·</sub>, &nbsp;f(X = x<sub>i</sub> | F = f<sub>j</sub>) = n<sub>ij</sub>/n<sub>·j</sub>
+          </div>
+          <p>
+            Perfect statistical independence in the data means f<sub>ij</sub> = f<sub>i·</sub>·f<sub>·j</sub> for every cell,
+            that is, all the rows of the table of conditional frequencies are equal to the marginal distribution (the table
+            has rank one). Multiplying by N, the <strong>expected frequencies under independence</strong> are
+          </p>
+          <div class="eq">E<sub>ij</sub> = N·f<sub>i·</sub>·f<sub>·j</sub> = n<sub>i·</sub>·n<sub>·j</sub> / N</div>
+
+          <h2 class="h6 mt-4">The chi-square test</h2>
+          <p>
+            Real samples are never exactly independent, so we ask whether the gap between observed and expected counts is
+            compatible with sampling noise. The null hypothesis H<sub>0</sub> is that X and F are independent in the population.
+            Pearson's statistic is
+          </p>
+          <div class="eq">
+            χ² = Σ<sub>i,j</sub> (O<sub>ij</sub> − E<sub>ij</sub>)² / E<sub>ij</sub>, &nbsp;with O<sub>ij</sub> = n<sub>ij</sub><br />
+            degrees of freedom: df = (r − 1)(c − 1) &nbsp;(r rows, c columns)<br />
+            p-value = P(χ²<sub>df</sub> ≥ χ²<sub>observed</sub>) = Q(df/2, χ²/2) &nbsp;(Q = regularised upper incomplete gamma function)
+          </div>
+          <p>
+            Under H<sub>0</sub> the statistic has asymptotically a χ² distribution with df degrees of freedom (rule of thumb:
+            all E<sub>ij</sub> ≥ 5). We reject H<sub>0</sub> at level α if p &lt; α, equivalently if χ² exceeds the critical value.
+            The statistic grows with N, so it measures evidence, not strength; for the strength of the association we also
+            report <strong>Cramér's V</strong> = √(χ² / (N·min(r − 1, c − 1))), a number between 0 (independence) and 1
+            (each value of X determines F). For 2×2 tables the table also gives the Yates continuity-corrected statistic.
+          </p>
+          <p class="small text-secondary mb-0">
+            The standardized residuals (O − E)/√E show which cells drive the result: values beyond ±2 are unusually large
+            (positive: more observations than independence predicts; negative: fewer).
+          </p>
+        </div>
+      </section>
+
+      <!-- ===================== EXPERIMENT ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Experiment · Build the table and test a dataset</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-12 col-md-6 col-lg-5">
+              <label for="dsSel" class="form-label">Dataset (X, F)</label>
+              <select id="dsSel" class="form-select"></select>
+            </div>
+            <div class="col-6 col-md-2 col-lg-2">
+              <label for="aSel" class="form-label">Level α</label>
+              <select id="aSel" class="form-select">
+                <option value="0.10">0.10</option>
+                <option value="0.05" selected>0.05</option>
+                <option value="0.01">0.01</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2 col-lg-2" id="nBox">
+              <label for="nIn" class="form-label">N (simulated)</label>
+              <input id="nIn" type="number" min="20" max="20000" step="10" value="500" class="form-control" />
+            </div>
+            <div class="col-6 col-md-2 col-lg-2" id="sBox">
+              <label for="sIn" class="form-label">Seed</label>
+              <input id="sIn" type="number" min="1" max="999999" step="1" value="1" class="form-control" />
+            </div>
+          </div>
+          <div id="customBox" class="mb-3">
+            <label for="rawIn" class="form-label">
+              Raw data: one observation per line, <span class="mono">x,f</span> (comma, semicolon or tab)
+            </label>
+            <textarea id="rawIn" rows="6" class="form-control mono small"></textarea>
+            <div class="mt-2">
+              <button id="bRun" type="button" class="btn btn-secondary btn-sm">Analyse</button>
+            </div>
+          </div>
+          <div id="errOut" class="text-danger small mb-2" role="alert"></div>
+          <p id="dsNote" class="small text-secondary"></p>
+
+          <h2 class="h6 mt-3">1 · Raw observations and contingency table</h2>
+          <div id="rawOut" class="small mb-3"></div>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">Observed counts n<sub>ij</sub>, with marginal totals</div>
+              <div id="tabO" class="table-responsive"></div>
+            </div>
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">Joint relative frequencies f<sub>ij</sub>, with marginal frequencies</div>
+              <div id="tabJ" class="table-responsive"></div>
+            </div>
+          </div>
+
+          <h2 class="h6 mt-4">2 · Conditional frequencies</h2>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">f(F | X): each row sums to 1 (last row: marginal of F)</div>
+              <div id="tabCR" class="table-responsive"></div>
+            </div>
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">f(X | F): each column sums to 1 (last column: marginal of X)</div>
+              <div id="tabCC" class="table-responsive"></div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="small fw-semibold mb-1">Conditional distribution of F for each value of X, against the marginal distribution (bottom bar)</div>
+            <div class="chart-box" id="barOut"></div>
+            <div class="small text-secondary mt-1">
+              If X and F were independent, all bars would have the same segments as the bottom bar.
+            </div>
+          </div>
+
+          <h2 class="h6 mt-4">3 · Expected frequencies and chi-square</h2>
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="small fw-semibold mb-1">Expected counts E<sub>ij</sub> = n<sub>i·</sub>n<sub>·j</sub>/N</div>
+              <div id="tabE" class="table-responsive"></div>
+            </div>
+            <div class="col-lg-4">
+              <div class="small fw-semibold mb-1">Contributions (O − E)²/E</div>
+              <div id="tabK" class="table-responsive"></div>
+            </div>
+            <div class="col-lg-4">
+              <div class="small fw-semibold mb-1">Standardized residuals (O − E)/√E</div>
+              <div id="tabZ" class="table-responsive"></div>
+            </div>
+          </div>
+          <div id="statOut" class="mt-3"></div>
+
+          <h2 class="h6 mt-4">4 · Interpretation</h2>
+          <div id="verdict"></div>
+        </div>
+      </section>
+
+      <!-- ===================== SIMPSON ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Association is not causation · the Berkeley admissions data</div>
+        <div class="card-body">
+          <p>
+            The pooled Berkeley table (dataset above) shows a clear association between gender and admission: men were
+            admitted more often than women. Does it mean that the admission procedure discriminated against women? The
+            data were also recorded by department, and the same test run <em>inside</em> each department gives a different
+            picture (Simpson's paradox):
+          </p>
+          <div id="simOut" class="mb-2"></div>
+          <p class="small text-secondary mb-0">
+            Department is a <em>confounder</em>: it is related to gender (women applied in larger proportion to departments
+            with low admission rates, C to F) and to admission (the admission rate depends strongly on the department). The
+            pooled association is real as a description of the data, but the effect of gender on the decision must be
+            measured within each department.
+          </p>
+        </div>
+      </section>
+
+      <!-- ===================== CODE ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Code · the same computation in Python</div>
+        <div class="card-body">
+          <p class="small">
+            Pure Python for the table and the statistic; <span class="mono">scipy.stats.chi2.sf</span> only for the optional p-value.
+            The page above runs the same formulas in JavaScript (the p-value uses the incomplete gamma function).
+          </p>
+<pre class="code mono">from collections import Counter
+from scipy.stats import chi2          # only for the optional p-value
+
+def contingency(pairs, xs=None, fs=None):
+    """pairs: list of (x, f) observations -&gt; categories and table of counts."""
+    xs = xs or sorted({x for x, _ in pairs})
+    fs = fs or sorted({f for _, f in pairs})
+    cnt = Counter(pairs)
+    return xs, fs, [[cnt[(x, f)] for f in fs] for x in xs]
+
+def analyze(pairs, xs=None, fs=None):
+    xs, fs, O = contingency(pairs, xs, fs)
+    r, c, N = len(xs), len(fs), len(pairs)
+    R = [sum(row) for row in O]                                  # row totals n_i.
+    C = [sum(O[i][j] for i in range(r)) for j in range(c)]       # column totals n_.j
+    joint = [[O[i][j] / N for j in range(c)] for i in range(r)]  # f_ij
+    f_x = [R[i] / N for i in range(r)]                           # marginal f_i.
+    f_f = [C[j] / N for j in range(c)]                           # marginal f_.j
+    cond_f_given_x = [[O[i][j] / R[i] for j in range(c)] for i in range(r)]
+    cond_x_given_f = [[O[i][j] / C[j] for j in range(c)] for i in range(r)]
+    E = [[R[i] * C[j] / N for j in range(c)] for i in range(r)]  # expected under independence
+    stat = sum((O[i][j] - E[i][j]) ** 2 / E[i][j] for i in range(r) for j in range(c))
+    df = (r - 1) * (c - 1)
+    p = chi2.sf(stat, df)                                        # P(chi2_df &gt;= stat)
+    V = (stat / (N * min(r - 1, c - 1))) ** 0.5                  # Cramer's V
+    return dict(xs=xs, fs=fs, O=O, E=E, stat=stat, df=df, p=p, V=V,
+                f_x=f_x, f_f=f_f, cond_f_given_x=cond_f_given_x, cond_x_given_f=cond_x_given_f)</pre>
+          <p class="small mb-1">Output on the Titanic data (2201 raw observations built from the counts):</p>
+<pre class="code mono">observed: [[122, 203], [167, 118], [528, 178], [673, 212]]
+P(F | X): [[0.375, 0.625], [0.586, 0.414], [0.748, 0.252], [0.76, 0.24]]
+expected: [[220.01, 104.99], [192.94, 92.06], [477.94, 228.06], [599.11, 285.89]]
+chi2 = 190.40, df = 3, p = 5.00e-41, V = 0.294</pre>
+        </div>
+      </section>
+
+      <!-- ===================== CONCLUSIONS ===================== -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Conclusions</div>
+        <div class="card-body">
+          <p>
+            <strong>Titanic (class × survival).</strong> The observed counts are far from the counts expected under
+            independence: χ² = 190.4 with 3 degrees of freedom, p ≈ 5·10<sup>−41</sup>, Cramér's V ≈ 0.29. We reject
+            independence: survival depends on the class of travel. The conditional frequencies show how: 62.5% of the
+            first-class passengers survived, against 41.4% in second class, 25.2% in third class and 24.0% among the crew.
+            All expected counts are far above 5, so the χ² approximation is reliable.
+          </p>
+          <p>
+            <strong>Simulated data.</strong> Two variables generated independently give small statistics and large
+            p-values (try different seeds: at α = 0.05 about one dataset in twenty is rejected by chance, a false positive),
+            while a dataset generated with a dependence is rejected as soon as N is large enough. A p-value above α does
+            not prove independence: it only says that the data are compatible with it, and with small N the test has
+            little power.
+          </p>
+          <p>
+            <strong>Association is not causation.</strong> The χ² test measures statistical association between two
+            variables, and a small p-value says that the association is unlikely to be a sampling accident. It does not say why
+            the variables are related. Three explanations are always possible: X influences F, F influences X, or a third
+            variable influences both (a confounder). In the Berkeley data the pooled association between gender and
+            admission (χ² = 92.2, df = 1, p ≈ 8·10<sup>−22</sup>, V ≈ 0.14) almost disappears inside the departments, where
+            five of the six tables show no significant association, and department A even shows a significant difference in
+            favour of women. Causal conclusions need a study design that controls the confounders (randomisation) or an
+            explicit causal model, not a test of independence.
+          </p>
+          <p class="mb-0 small text-secondary">
+            Data: Titanic, R <span class="mono">datasets::Titanic</span> (2201 persons, class × survival); Berkeley, R
+            <span class="mono">datasets::UCBAdmissions</span> (4526 applications, Bickel, Hammel and O'Connell, Science 1975).
+            The counts were entered from these datasets; their grand totals and marginal totals (2201, 1490/711 for Titanic;
+            4526, 1755 admitted for Berkeley) were checked.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <footer class="py-3 my-4">
+      <p class="text-center text-body-secondary">© 2026 Giorgio N.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var $ = function (id) { return document.getElementById(id); };
+
+        /* ---------------- helpers ---------------- */
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+        function f4(v) { return v.toFixed(4); }
+        function ex(v) { return v === 0 ? "0" : v.toExponential(2); }
+        function fp(p) { return p < 1e-4 ? p.toExponential(2) : p.toFixed(4); }
+
+        /* ---------------- chi-square distribution ---------------- */
+        function lgamma(x) {
+          var c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+          var y = x, tmp = x + 5.5, ser = 1.000000000190015, j;
+          tmp -= (x + 0.5) * Math.log(tmp);
+          for (j = 0; j < 6; j++) { y += 1; ser += c[j] / y; }
+          return -tmp + Math.log((2.5066282746310005 * ser) / x);
+        }
+        /* regularised upper incomplete gamma Q(a, x) */
+        function gammaQ(a, x) {
+          if (x <= 0) return 1;
+          var i, sum, del, ap, b, c, d, h, an;
+          if (x < a + 1) {
+            ap = a; sum = 1 / a; del = sum;
+            for (i = 0; i < 1000; i++) { ap += 1; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-16) break; }
+            return Math.max(0, 1 - sum * Math.exp(-x + a * Math.log(x) - lgamma(a)));
+          }
+          b = x + 1 - a; c = 1 / 1e-300; d = 1 / b; h = d;
+          for (i = 1; i < 1000; i++) {
+            an = -i * (i - a); b += 2;
+            d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+            c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
+            d = 1 / d; del = d * c; h *= del;
+            if (Math.abs(del - 1) < 1e-16) break;
+          }
+          return Math.exp(-x + a * Math.log(x) - lgamma(a)) * h;
+        }
+        function chiP(stat, df) { return gammaQ(df / 2, stat / 2); }
+        function chiCrit(alpha, df) {
+          var lo = 0, hi = 1, i, mid;
+          while (chiP(hi, df) > alpha) hi *= 2;
+          for (i = 0; i < 200; i++) { mid = 0.5 * (lo + hi); if (chiP(mid, df) > alpha) lo = mid; else hi = mid; }
+          return 0.5 * (lo + hi);
+        }
+
+        /* ---------------- analysis ---------------- */
+        function sortCats(a) {
+          var num = a.every(function (v) { return v !== "" && isFinite(Number(v)); });
+          return a.slice().sort(function (p, q) { return num ? Number(p) - Number(q) : (p < q ? -1 : p > q ? 1 : 0); });
+        }
+        function tableFromPairs(pairs, xs, fs) {
+          var sx = {}, sf = {}, i;
+          if (!xs) { sx = {}; pairs.forEach(function (p) { sx[p[0]] = 1; }); xs = sortCats(Object.keys(sx)); }
+          if (!fs) { sf = {}; pairs.forEach(function (p) { sf[p[1]] = 1; }); fs = sortCats(Object.keys(sf)); }
+          var ix = {}, jf = {};
+          xs.forEach(function (v, k) { ix[v] = k; });
+          fs.forEach(function (v, k) { jf[v] = k; });
+          var O = xs.map(function () { return fs.map(function () { return 0; }); });
+          for (i = 0; i < pairs.length; i++) O[ix[pairs[i][0]]][jf[pairs[i][1]]]++;
+          return { xs: xs, fs: fs, O: O };
+        }
+        function analyse(T) {
+          var r = T.xs.length, c = T.fs.length, O = T.O, i, j, N = 0;
+          var R = [], C = [];
+          for (i = 0; i < r; i++) { R[i] = 0; for (j = 0; j < c; j++) R[i] += O[i][j]; N += R[i]; }
+          for (j = 0; j < c; j++) { C[j] = 0; for (i = 0; i < r; i++) C[j] += O[i][j]; }
+          var E = [], K = [], Z = [], stat = 0, small = 0, minE = Infinity, yates = null;
+          for (i = 0; i < r; i++) {
+            E[i] = []; K[i] = []; Z[i] = [];
+            for (j = 0; j < c; j++) {
+              E[i][j] = (R[i] * C[j]) / N;
+              K[i][j] = Math.pow(O[i][j] - E[i][j], 2) / E[i][j];
+              Z[i][j] = (O[i][j] - E[i][j]) / Math.sqrt(E[i][j]);
+              stat += K[i][j];
+              if (E[i][j] < 5) small++;
+              minE = Math.min(minE, E[i][j]);
+            }
+          }
+          if (r === 2 && c === 2) {
+            yates = 0;
+            for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) yates += Math.pow(Math.max(0, Math.abs(O[i][j] - E[i][j]) - 0.5), 2) / E[i][j];
+          }
+          var df = (r - 1) * (c - 1);
+          return {
+            xs: T.xs, fs: T.fs, O: O, R: R, C: C, N: N, E: E, K: K, Z: Z, stat: stat, df: df,
+            p: chiP(stat, df), V: Math.sqrt(stat / (N * Math.min(r - 1, c - 1))),
+            small: small, minE: minE, cells: r * c, yates: yates, yatesP: yates === null ? null : chiP(yates, 1)
+          };
+        }
+
+        /* ---------------- datasets ---------------- */
+        function expand(xs, fs, M) {
+          var out = [];
+          xs.forEach(function (x, i) { fs.forEach(function (f, j) { for (var k = 0; k < M[i][j]; k++) out.push([x, f]); }); });
+          return out;
+        }
+        function shuffle(a, rand) {
+          for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+          return a;
+        }
+        var TIT = { xs: ["1st", "2nd", "3rd", "Crew"], fs: ["No", "Yes"], M: [[122, 203], [167, 118], [528, 178], [673, 212]] };
+        var BER = { xs: ["Male", "Female"], fs: ["Admitted", "Rejected"], M: [[1198, 1493], [557, 1278]] };
+        var DEPT = [
+          ["A", [512, 313], [89, 19]], ["B", [353, 207], [17, 8]], ["C", [120, 205], [202, 391]],
+          ["D", [138, 279], [131, 244]], ["E", [53, 138], [94, 299]], ["F", [22, 351], [24, 317]]
+        ];
+        function pick(rand, labels, probs) {
+          var u = rand(), s = 0, k;
+          for (k = 0; k < labels.length; k++) { s += probs[k]; if (u < s) return labels[k]; }
+          return labels[labels.length - 1];
+        }
+        function simulate(dep, N, seed) {
+          var rand = rng(seed), xs = ["A", "B", "C"], pairs = [], i, x;
+          var pYes = { A: 0.3, B: 0.45, C: 0.6 };
+          for (i = 0; i < N; i++) {
+            x = pick(rand, xs, [0.5, 0.3, 0.2]);
+            pairs.push([x, rand() < (dep ? pYes[x] : 0.45) ? "Yes" : "No"]);
+          }
+          return pairs;
+        }
+        var DATASETS = [
+          { id: "tit", name: "Titanic: class of travel × survival (real, N = 2201)",
+            note: "X = class (1st, 2nd, 3rd, Crew), F = survival (No, Yes). Real data, R datasets::Titanic. The 2201 raw observations are rebuilt from the counts and then tabulated by the code.",
+            get: function () { return { pairs: shuffle(expand(TIT.xs, TIT.fs, TIT.M), rng(11)), xs: TIT.xs, fs: TIT.fs }; } },
+          { id: "ber", name: "Berkeley 1973: gender × admission (real, N = 4526, all departments pooled)",
+            note: "X = gender (Male, Female), F = decision (Admitted, Rejected). Real data, R datasets::UCBAdmissions, six largest departments pooled. See the section on confounding below.",
+            get: function () { return { pairs: shuffle(expand(BER.xs, BER.fs, BER.M), rng(12)), xs: BER.xs, fs: BER.fs }; } },
+          { id: "ind", name: "Simulated, independent variables",
+            note: "X ∈ {A, B, C} with probabilities 0.5, 0.3, 0.2, and F ∈ {Yes, No} with P(Yes) = 0.45, drawn independently. H₀ is true by construction.",
+            sim: true, get: function (N, seed) { return { pairs: simulate(false, N, seed) }; } },
+          { id: "dep", name: "Simulated, dependent variables",
+            note: "Same X as above, but P(Yes | A) = 0.30, P(Yes | B) = 0.45, P(Yes | C) = 0.60. H₀ is false by construction.",
+            sim: true, get: function (N, seed) { return { pairs: simulate(true, N, seed) }; } },
+          { id: "cus", name: "Your own data (paste raw pairs)",
+            note: "Paste one observation per line as x,f. Any labels are accepted; numerical labels are sorted numerically.",
+            custom: true, get: function () { return parseRaw($("rawIn").value); } }
+        ];
+        function parseRaw(text) {
+          var lines = text.split(/\r?\n/), pairs = [], i, parts;
+          for (i = 0; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            parts = lines[i].split(/[,;\t]/).map(function (s) { return s.trim(); });
+            if (parts.length !== 2 || parts[0] === "" || parts[1] === "") throw new Error("Line " + (i + 1) + ": expected two values, x and f, separated by a comma.");
+            pairs.push([parts[0], parts[1]]);
+          }
+          if (pairs.length < 2) throw new Error("At least two observations are needed.");
+          return { pairs: pairs };
+        }
+        function sampleRaw() {
+          var rand = rng(5), lines = [], i, x, f;
+          for (i = 0; i < 60; i++) {
+            x = rand() < 0.5 ? "morning" : "evening";
+            f = rand() < (x === "morning" ? 0.65 : 0.4) ? "coffee" : "tea";
+            lines.push(x + "," + f);
+          }
+          return lines.join("\n");
+        }
+
+        /* ---------------- rendering ---------------- */
+        function grid(res, rowsHead, colsHead, cell, opts) {
+          opts = opts || {};
+          var r = res.xs.length, c = res.fs.length, i, j;
+          var h = '<table class="table table-sm table-striped small mb-0 tight"><thead><tr><th class="rowh">X \\ F</th>';
+          for (j = 0; j < c; j++) h += "<th>" + esc(res.fs[j]) + "</th>";
+          if (opts.rowTot) h += '<th class="tot">' + opts.rowTotLabel + "</th>";
+          h += "</tr></thead><tbody>";
+          for (i = 0; i < r; i++) {
+            h += '<tr><td class="rowh">' + esc(res.xs[i]) + "</td>";
+            for (j = 0; j < c; j++) h += '<td class="mono' + (opts.cls ? opts.cls(i, j) : "") + '">' + cell(i, j) + "</td>";
+            if (opts.rowTot) h += '<td class="mono tot">' + opts.rowTot(i) + "</td>";
+            h += "</tr>";
+          }
+          if (opts.colTot) {
+            h += '<tr class="tot"><td class="rowh">' + opts.colTotLabel + "</td>";
+            for (j = 0; j < c; j++) h += '<td class="mono">' + opts.colTot(j) + "</td>";
+            if (opts.rowTot) h += '<td class="mono">' + opts.grand + "</td>";
+            h += "</tr>";
+          }
+          return h + "</tbody></table>";
+        }
+
+        var PAL = ["#0d6efd", "#c2410c", "#198754", "#6f42c1", "#b02a37", "#0f766e", "#6c757d", "#a16207"];
+        function bars(res) {
+          var r = res.xs.length, c = res.fs.length, W = 600, lm = 92, rm = 12, bw = W - lm - rm, bh = 24, gap = 9, top = 28;
+          var H = top + (r + 1) * (bh + gap) + 6, s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="Conditional distributions of F">';
+          var j, i, x, w, v, y, lx = lm;
+          for (j = 0; j < c; j++) {
+            s += '<rect x="' + lx + '" y="8" width="10" height="10" fill="' + PAL[j % PAL.length] + '"/>';
+            s += '<text x="' + (lx + 14) + '" y="17" font-size="11" fill="#495057">F = ' + esc(res.fs[j]) + "</text>";
+            lx += 24 + 7 * (String(res.fs[j]).length + 5);
+          }
+          function row(label, vals, yy, bold) {
+            var xx = lm, k;
+            s += '<text x="' + (lm - 6) + '" y="' + (yy + bh / 2 + 4) + '" font-size="11" text-anchor="end" fill="#212529"' + (bold ? ' font-weight="700"' : "") + ">" + esc(label) + "</text>";
+            for (k = 0; k < c; k++) {
+              w = vals[k] * bw;
+              s += '<rect x="' + xx.toFixed(1) + '" y="' + yy + '" width="' + Math.max(w, 0).toFixed(1) + '" height="' + bh + '" fill="' + PAL[k % PAL.length] + '"' + (bold ? ' stroke="#212529" stroke-width="1"' : "") + "><title>" + esc(label) + ", F = " + esc(res.fs[k]) + ": " + f4(vals[k]) + "</title></rect>";
+              if (w > 40) s += '<text x="' + (xx + w / 2).toFixed(1) + '" y="' + (yy + bh / 2 + 4) + '" font-size="11" text-anchor="middle" fill="#fff">' + (100 * vals[k]).toFixed(1) + "%</text>";
+              xx += w;
+            }
+          }
+          for (i = 0; i < r; i++) {
+            v = res.O[i].map(function (n) { return n / res.R[i]; });
+            row(String(res.xs[i]) + " (n=" + res.R[i] + ")", v, top + i * (bh + gap), false);
+          }
+          row("All (marginal)", res.C.map(function (n) { return n / res.N; }), top + r * (bh + gap), true);
+          return s + "</svg>";
+        }
+
+        function strength(V, k) {
+          /* Cohen's guidelines scaled by min(r-1, c-1) */
+          var t = [0.1, 0.3, 0.5].map(function (u) { return u / Math.sqrt(k); });
+          return V < t[0] ? "negligible" : V < t[1] ? "small" : V < t[2] ? "medium" : "large";
+        }
+
+        function render(res, alpha) {
+          var N = res.N, i, j;
+          $("tabO").innerHTML = grid(res, 0, 0, function (a, b) { return res.O[a][b]; }, {
+            rowTot: function (a) { return res.R[a]; }, rowTotLabel: "total n<sub>i·</sub>",
+            colTot: function (b) { return res.C[b]; }, colTotLabel: "total n<sub>·j</sub>", grand: N });
+          $("tabJ").innerHTML = grid(res, 0, 0, function (a, b) { return f4(res.O[a][b] / N); }, {
+            rowTot: function (a) { return f4(res.R[a] / N); }, rowTotLabel: "f<sub>i·</sub>",
+            colTot: function (b) { return f4(res.C[b] / N); }, colTotLabel: "f<sub>·j</sub>", grand: "1.0000" });
+          $("tabCR").innerHTML = grid(res, 0, 0, function (a, b) { return f4(res.O[a][b] / res.R[a]); }, {
+            rowTot: function () { return "1.0000"; }, rowTotLabel: "sum",
+            colTot: function (b) { return f4(res.C[b] / N); }, colTotLabel: "marginal f<sub>·j</sub>", grand: "1.0000" });
+          $("tabCC").innerHTML = grid(res, 0, 0, function (a, b) { return f4(res.O[a][b] / res.C[b]); }, {
+            rowTot: function (a) { return f4(res.R[a] / N); }, rowTotLabel: "marginal f<sub>i·</sub>",
+            colTot: function () { return "1.0000"; }, colTotLabel: "sum", grand: "1.0000" });
+          $("barOut").innerHTML = bars(res);
+          $("tabE").innerHTML = grid(res, 0, 0, function (a, b) { return res.E[a][b].toFixed(2); }, {
+            cls: function (a, b) { return res.E[a][b] < 5 ? " table-warning" : ""; } });
+          $("tabK").innerHTML = grid(res, 0, 0, function (a, b) { return res.K[a][b].toFixed(3); }, {
+            rowTot: function (a) { var s = 0; for (j = 0; j < res.fs.length; j++) s += res.K[a][j]; return s.toFixed(3); }, rowTotLabel: "row sum",
+            colTot: function (b) { var s = 0; for (i = 0; i < res.xs.length; i++) s += res.K[i][b]; return s.toFixed(3); }, colTotLabel: "col sum", grand: res.stat.toFixed(3) });
+          $("tabZ").innerHTML = grid(res, 0, 0, function (a, b) { return res.Z[a][b].toFixed(2); }, {
+            cls: function (a, b) { return Math.abs(res.Z[a][b]) >= 2 ? (res.Z[a][b] > 0 ? " table-primary" : " table-danger") : ""; } });
+
+          var crit = chiCrit(alpha, res.df), reject = res.p < alpha, k = Math.min(res.xs.length - 1, res.fs.length - 1);
+          var st = '<div class="table-responsive"><table class="table table-sm table-striped small mb-0 tight" style="max-width: 640px"><tbody>';
+          st += "<tr><td>Observations N</td><td class=\"mono\">" + N + "</td></tr>";
+          st += "<tr><td>Table size r × c</td><td class=\"mono\">" + res.xs.length + " × " + res.fs.length + "</td></tr>";
+          st += "<tr><td>Chi-square statistic χ² = Σ (O − E)²/E</td><td class=\"mono\">" + res.stat.toFixed(4) + "</td></tr>";
+          st += "<tr><td>Degrees of freedom (r − 1)(c − 1)</td><td class=\"mono\">" + res.df + "</td></tr>";
+          st += "<tr><td>p-value P(χ²<sub>df</sub> ≥ χ²)</td><td class=\"mono\">" + fp(res.p) + "</td></tr>";
+          st += "<tr><td>Critical value at α = " + alpha + "</td><td class=\"mono\">" + crit.toFixed(4) + "</td></tr>";
+          st += "<tr><td>Cramér's V</td><td class=\"mono\">" + res.V.toFixed(4) + " (" + strength(res.V, k) + ")</td></tr>";
+          st += "<tr><td>Smallest expected count</td><td class=\"mono\">" + res.minE.toFixed(2) + "</td></tr>";
+          if (res.yates !== null) st += "<tr><td>2×2 table: Yates-corrected χ², p-value</td><td class=\"mono\">" + res.yates.toFixed(4) + ", " + fp(res.yatesP) + "</td></tr>";
+          st += "</tbody></table></div>";
+          $("statOut").innerHTML = st;
+
+          /* largest residual */
+          var bi = 0, bj = 0;
+          for (i = 0; i < res.xs.length; i++) for (j = 0; j < res.fs.length; j++) if (Math.abs(res.Z[i][j]) > Math.abs(res.Z[bi][bj])) { bi = i; bj = j; }
+          var v = '<div class="alert ' + (reject ? "alert-danger" : "alert-success") + ' small mb-2" role="status">';
+          if (reject) {
+            v += "<strong>Reject H<sub>0</sub> (p = " + fp(res.p) + " &lt; α = " + alpha + ").</strong> The data are not compatible with independence: " +
+              "X and F are statistically <strong>dependent</strong> (associated). The strength of the association is " + strength(res.V, k) + " (V = " + res.V.toFixed(3) + "). ";
+          } else {
+            v += "<strong>Do not reject H<sub>0</sub> (p = " + fp(res.p) + " ≥ α = " + alpha + ").</strong> The data are compatible with independence: " +
+              "there is no evidence of association between X and F. This does not prove that they are independent, especially if N is small (low power). ";
+          }
+          v += "</div>";
+          v += '<p class="small mb-2">The cell that deviates most from independence is (' + esc(res.xs[bi]) + ", " + esc(res.fs[bj]) + "): observed " + res.O[bi][bj] +
+            ", expected " + res.E[bi][bj].toFixed(2) + ", standardized residual " + res.Z[bi][bj].toFixed(2) + ".</p>";
+          if (res.small > 0) v += '<p class="small text-warning-emphasis mb-2">Warning: ' + res.small + " of " + res.cells + " expected counts are below 5 (highlighted), so the χ² approximation may be unreliable; merge categories or use an exact test.</p>";
+          v += '<p class="small text-secondary mb-0">A statistical test can show an association, not its cause: X may influence F, F may influence X, or a third variable may influence both (see the Berkeley section).</p>';
+          $("verdict").innerHTML = v;
+        }
+
+        function run() {
+          var d = DATASETS[Number($("dsSel").value)], alpha = Number($("aSel").value), out, N, seed, T;
+          $("errOut").textContent = "";
+          $("customBox").style.display = d.custom ? "" : "none";
+          $("nBox").style.display = d.sim ? "" : "none";
+          $("sBox").style.display = d.sim ? "" : "none";
+          $("dsNote").textContent = d.note;
+          try {
+            N = Number($("nIn").value); seed = Number($("sIn").value);
+            if (d.sim && (!Number.isInteger(N) || N < 20 || N > 20000)) throw new Error("N must be an integer between 20 and 20000.");
+            if (d.sim && (!Number.isInteger(seed) || seed < 1)) throw new Error("The seed must be a positive integer.");
+            out = d.get(N, seed);
+            T = tableFromPairs(out.pairs, out.xs, out.fs);
+            if (T.xs.length < 2 || T.fs.length < 2) throw new Error("Each variable needs at least two different values.");
+            if (T.xs.length > 20 || T.fs.length > 20) throw new Error("At most 20 categories per variable are supported.");
+          } catch (e) {
+            $("errOut").textContent = e.message;
+            ["rawOut", "tabO", "tabJ", "tabCR", "tabCC", "barOut", "tabE", "tabK", "tabZ", "statOut", "verdict"].forEach(function (id) { $(id).innerHTML = ""; });
+            return;
+          }
+          var head = '<div class="table-responsive"><table class="table table-sm table-striped small mb-1 tight" style="max-width: 360px"><thead><tr><th>#</th><th>X</th><th>F</th></tr></thead><tbody>';
+          out.pairs.slice(0, 6).forEach(function (p, i) { head += '<tr><td class="mono">' + (i + 1) + "</td><td>" + esc(p[0]) + "</td><td>" + esc(p[1]) + "</td></tr>"; });
+          head += "</tbody></table></div>First 6 of " + out.pairs.length + " observations, then tabulated: each cell n<sub>ij</sub> counts the observations with X = x<sub>i</sub> and F = f<sub>j</sub>.";
+          $("rawOut").innerHTML = head;
+          render(analyse(T), alpha);
+        }
+
+        function renderSimpson() {
+          var h = '<div class="table-responsive"><table class="table table-sm table-striped small mb-0 tight"><thead><tr><th>Department</th><th>Men admitted</th><th>Women admitted</th><th>χ² (df = 1)</th><th>p-value</th><th>Association at α = 0.05</th></tr></thead><tbody>';
+          function line(label, m, f) {
+            var T = { xs: ["Male", "Female"], fs: ["Admitted", "Rejected"], O: [m, f] }, r = analyse(T);
+            var rm = m[0] / (m[0] + m[1]), rf = f[0] / (f[0] + f[1]);
+            return "<tr><td class=\"rowh\">" + label + '</td><td class="mono">' + m[0] + "/" + (m[0] + m[1]) + " = " + (100 * rm).toFixed(1) + '%</td><td class="mono">' + f[0] + "/" + (f[0] + f[1]) + " = " + (100 * rf).toFixed(1) +
+              '%</td><td class="mono">' + r.stat.toFixed(2) + '</td><td class="mono">' + fp(r.p) + "</td><td>" + (r.p < 0.05 ? (rm > rf ? "yes, favours men" : "yes, favours women") : "no") + "</td></tr>";
+          }
+          h += line("All pooled", BER.M[0], BER.M[1]);
+          DEPT.forEach(function (d) { h += line(d[0], d[1], d[2]); });
+          h += "</tbody></table></div>";
+          $("simOut").innerHTML = h;
+        }
+
+        /* ---------------- start-up ---------------- */
+        $("dsSel").innerHTML = DATASETS.map(function (d, i) { return '<option value="' + i + '">' + esc(d.name) + "</option>"; }).join("");
+        $("rawIn").value = sampleRaw();
+        $("dsSel").addEventListener("change", run);
+        $("aSel").addEventListener("change", run);
+        $("nIn").addEventListener("change", run);
+        $("sIn").addEventListener("change", run);
+        $("bRun").addEventListener("click", run);
+        renderSimpson();
+        run();
+      })();
+    </script>
+  </body>
+</html>
