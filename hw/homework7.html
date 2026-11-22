@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <title>HW 7 — Modes of convergence, and Bayes' theorem</title>
+    <style>
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .viz-svg text {
+        font-family: system-ui, sans-serif;
+      }
+      .chart-box {
+        background: #fff;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+      }
+      .eq {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92rem;
+        background: var(--bs-tertiary-bg);
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        overflow-x: auto;
+      }
+      table.tight td,
+      table.tight th {
+        white-space: nowrap;
+      }
+      table.wrap td,
+      table.wrap th {
+        vertical-align: top;
+      }
+    </style>
+  </head>
+  <body class="bg-body-secondary">
+    <div class="container-xl py-4">
+      <!-- <a
+        href="../index.html"
+        class="link-secondary link-opacity-75 d-inline-block mb-2"
+        >← Back to the homework list</a
+      > -->
+
+      <header class="mt-3 mb-4">
+        <!-- <p
+          class="text-uppercase text-secondary fw-semibold small mb-1"
+          style="letter-spacing: 0.08em"
+        >
+          HW 7 · Statistics · A.Y. 2026/2027
+        </p> -->
+        <h1 class="display-5">Modes of Convergence, Conditional Probability and Bayes</h1>
+        <p class="lead">
+          How random sequences converge (LLN, CLT, the role of √n), and how Bayes' theorem updates a belief
+        </p>
+      </header>
+
+      <noscript>
+        <div class="alert alert-warning">
+          This page needs JavaScript to run the experiments.
+        </div>
+      </noscript>
+
+      <!-- =========================================================
+           EXERCISE 1
+           ========================================================= -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Exercise 1 · Modes of convergence in probability theory</div>
+        <div class="card-body">
+          <h2 class="h6">The four modes</h2>
+          <p>
+            Let X<sub>1</sub>, X<sub>2</sub>, … and X be random variables on the same probability space. “X<sub>n</sub> tends to X” can
+            mean four different things, and they do not say the same thing about the data.
+          </p>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped small wrap mb-3">
+              <thead>
+                <tr><th>Mode</th><th>Definition</th><th>What it controls</th><th>Main use</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Almost sure</strong> (a.s.)<br />X<sub>n</sub> → X a.s.</td>
+                  <td class="mono">P( lim X<sub>n</sub> = X ) = 1<br />⇔ P( sup<sub>m≥n</sub> |X<sub>m</sub> − X| &gt; ε ) → 0 for every ε &gt; 0</td>
+                  <td>The whole trajectory: for almost every outcome, after some n the sequence stays within ε of X forever.</td>
+                  <td>Strong Law of Large Numbers; Glivenko–Cantelli</td>
+                </tr>
+                <tr>
+                  <td><strong>In probability</strong><br />X<sub>n</sub> →<sup>P</sup> X</td>
+                  <td class="mono">P( |X<sub>n</sub> − X| &gt; ε ) → 0 for every ε &gt; 0</td>
+                  <td>One fixed large n: a deviation larger than ε is unlikely. Says nothing about whether deviations keep happening at later times.</td>
+                  <td>Weak LLN; consistency of estimators</td>
+                </tr>
+                <tr>
+                  <td><strong>Mean square</strong> (L²)<br />X<sub>n</sub> →<sup>L²</sup> X</td>
+                  <td class="mono">E[ (X<sub>n</sub> − X)² ] → 0</td>
+                  <td>The average squared error, which also controls the size of rare big deviations.</td>
+                  <td>MSE of estimators, E[(X̄ − μ)²] = σ²/n</td>
+                </tr>
+                <tr>
+                  <td><strong>In distribution</strong><br />X<sub>n</sub> →<sup>d</sup> X</td>
+                  <td class="mono">F<sub>n</sub>(x) → F(x) at every continuity point x of F</td>
+                  <td>Only the probability laws get close. X<sub>n</sub> need not be close to X as numbers, and may even live on a different probability space.</td>
+                  <td>Central Limit Theorem; asymptotic tests and confidence intervals</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="h6 mt-4">How they are related</h2>
+          <div class="chart-box mb-2">
+            <svg viewBox="0 0 640 190" class="w-100 viz-svg" role="img" aria-label="Implications between modes of convergence">
+              <defs>
+                <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#495057" />
+                </marker>
+              </defs>
+              <rect x="10" y="20" width="150" height="44" rx="6" fill="#e7f1ff" stroke="#0d6efd" />
+              <text x="85" y="47" text-anchor="middle" font-size="13" fill="#212529">almost sure</text>
+              <rect x="10" y="120" width="150" height="44" rx="6" fill="#e7f1ff" stroke="#0d6efd" />
+              <text x="85" y="147" text-anchor="middle" font-size="13" fill="#212529">mean square (L²)</text>
+              <rect x="245" y="70" width="150" height="44" rx="6" fill="#fff3cd" stroke="#b58100" />
+              <text x="320" y="97" text-anchor="middle" font-size="13" fill="#212529">in probability</text>
+              <rect x="480" y="70" width="150" height="44" rx="6" fill="#e2f3e8" stroke="#198754" />
+              <text x="555" y="97" text-anchor="middle" font-size="13" fill="#212529">in distribution</text>
+              <line x1="160" y1="44" x2="245" y2="84" stroke="#495057" stroke-width="2" marker-end="url(#ah)" />
+              <line x1="160" y1="140" x2="245" y2="102" stroke="#495057" stroke-width="2" marker-end="url(#ah)" />
+              <line x1="395" y1="92" x2="480" y2="92" stroke="#495057" stroke-width="2" marker-end="url(#ah)" />
+              <text x="204" y="52" font-size="11" fill="#b02a37" text-anchor="middle">converse fails: A</text>
+              <text x="200" y="136" font-size="11" fill="#b02a37" text-anchor="middle">converse fails: A, B</text>
+              <text x="438" y="78" font-size="11" fill="#b02a37" text-anchor="middle">converse fails: C</text>
+              <text x="320" y="180" font-size="11" fill="#6c757d" text-anchor="middle">a.s. ⇏ L² (example B),  L² ⇏ a.s. (example A)</text>
+            </svg>
+          </div>
+          <p class="small">
+            Strongest to weakest: a.s. ⇒ in probability and L² ⇒ in probability, and in probability ⇒ in distribution. The a.s. and L² modes
+            are not comparable. Partial converses: convergence in probability implies a.s. convergence along a subsequence; if X is a
+            constant, convergence in distribution implies convergence in probability; a.s. convergence together with a bound |X<sub>n</sub>| ≤ Y,
+            where E[Y²] &lt; ∞, implies L² convergence (dominated convergence).
+          </p>
+
+          <h3 class="h6 text-secondary mt-3">Three counterexamples (exact values)</h3>
+          <ul class="small">
+            <li>
+              <strong>A. In probability and L², but not a.s. (“sliding bump”).</strong> Let ω be uniform on [0, 1]. For n = 2<sup>k</sup> + j
+              (0 ≤ j &lt; 2<sup>k</sup>) put X<sub>n</sub> = 1 if ω ∈ [j/2<sup>k</sup>, (j + 1)/2<sup>k</sup>), else 0. Then
+              P(X<sub>n</sub> = 1) = 2<sup>−k</sup> → 0, so X<sub>n</sub> → 0 in probability and in L². But for every ω there is, at every level k,
+              exactly one n with X<sub>n</sub> = 1: the bump visits ω infinitely often, so X<sub>n</sub>(ω) does not converge for any ω.
+            </li>
+            <li>
+              <strong>B. A.s. (and in probability), but not L².</strong> Let the X<sub>n</sub> (n ≥ 2) be independent with
+              P(X<sub>n</sub> = n) = 1/n² and X<sub>n</sub> = 0 otherwise. Since Σ 1/n² &lt; ∞, Borel–Cantelli gives X<sub>n</sub> = 0 for all
+              large n almost surely. But E[X<sub>n</sub>²] = n²·(1/n²) = 1 for all n: the rare spikes carry all the squared error.
+            </li>
+            <li>
+              <strong>C. In distribution, but not in probability.</strong> Let Z ~ N(0, 1), X = Z and X<sub>n</sub> = (−1)<sup>n</sup>·Z. Every X<sub>n</sub> has
+              exactly the N(0, 1) law, so X<sub>n</sub> → X in distribution; but X<sub>n</sub> − X equals 0 for even n and −2Z for odd n, which does not tend to 0.
+            </li>
+          </ul>
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-12 col-md-6 col-lg-5">
+              <label for="cxSel" class="form-label">Example</label>
+              <select id="cxSel" class="form-select">
+                <option value="A">A · sliding bump (X = 0)</option>
+                <option value="B">B · rare spikes (X = 0)</option>
+                <option value="C">C · alternating sign (X = Z)</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="cxEps" class="form-label">ε</label>
+              <select id="cxEps" class="form-select">
+                <option value="0.1">0.1</option>
+                <option value="0.25">0.25</option>
+                <option value="0.5" selected>0.5</option>
+                <option value="0.9">0.9</option>
+              </select>
+            </div>
+          </div>
+          <div id="cxOut" class="mb-4"></div>
+
+          <h2 class="h6 mt-4">Their role in the Law of Large Numbers and the Central Limit Theorem</h2>
+          <p>
+            Let X<sub>1</sub>, X<sub>2</sub>, … be independent and identically distributed with mean μ and variance σ² &lt; ∞, and
+            X̄<sub>n</sub> = (X<sub>1</sub> + … + X<sub>n</sub>)/n.
+          </p>
+          <ul>
+            <li>
+              <strong>L² and the weak LLN.</strong> Independence makes the variances add, so E[(X̄<sub>n</sub> − μ)²] = Var(X̄<sub>n</sub>) = σ²/n → 0:
+              the sample mean converges to μ in mean square. Chebyshev's inequality then turns it into convergence in probability,
+              with an explicit rate: P(|X̄<sub>n</sub> − μ| &gt; ε) ≤ σ²/(nε²). (Khinchin: for i.i.d. data a finite mean is enough, without variance.)
+            </li>
+            <li>
+              <strong>A.s. and the strong LLN.</strong> Kolmogorov: for i.i.d. data with finite mean, X̄<sub>n</sub> → μ almost surely. This is the
+              stronger statement about the single sequence of data that one actually observes: from some (random) n on, the running average stays near μ.
+              The weak law alone does not forbid occasional deviations at arbitrarily late times.
+            </li>
+            <li>
+              <strong>Distribution and the CLT.</strong> Z<sub>n</sub> = √n (X̄<sub>n</sub> − μ)/σ →<sup>d</sup> N(0, 1). The theorem is about laws only and cannot be
+              upgraded: Z<sub>n</sub> does not converge in probability (not even to a random variable), because Z<sub>n</sub> and Z<sub>2n</sub> stay at
+              distance of order 1. The CLT gives the <em>shape and size</em> of the error of X̄<sub>n</sub>, which the LLN only says goes to 0.
+            </li>
+            <li>
+              <strong>Without a mean there is no law of large numbers.</strong> For the Cauchy distribution X̄<sub>n</sub> has exactly the same law as X<sub>1</sub>
+              for every n, so it never concentrates (simulated below).
+            </li>
+          </ul>
+          <p class="small mb-1"><strong>Other results of the same kind in statistics.</strong></p>
+          <ul class="small">
+            <li><strong>Consistency</strong> of an estimator θ̂<sub>n</sub> is convergence in probability to θ (strong consistency: a.s.); the MSE (L²) of θ̂<sub>n</sub> = variance + bias² controls it.</li>
+            <li><strong>Slutsky's theorem</strong> combines the modes: if Z<sub>n</sub> →<sup>d</sup> Z and S<sub>n</sub> →<sup>P</sup> c, then Z<sub>n</sub>/S<sub>n</sub> →<sup>d</sup> Z/c. This justifies replacing the unknown σ by the sample standard deviation s in the CLT, and gives the t-statistic its N(0, 1) limit.</li>
+            <li><strong>Delta method and asymptotic normality of the MLE:</strong> √n (θ̂<sub>n</sub> − θ) →<sup>d</sup> N(0, 1/I(θ)), the basis of Wald confidence intervals and tests.</li>
+            <li><strong>Glivenko–Cantelli:</strong> the empirical distribution function converges to F uniformly, almost surely: the sample describes the population.</li>
+            <li><strong>Monte Carlo integration:</strong> the error of an average of n samples is of order σ/√n, from the LLN (it converges) and the CLT (how fast).</li>
+          </ul>
+
+          <h2 class="h6 mt-4">Why √n appears</h2>
+          <p>
+            Everything comes from the additivity of variance. If X<sub>1</sub>, …, X<sub>n</sub> are <em>independent</em> (or just uncorrelated) with variance σ², the covariance terms vanish:
+          </p>
+          <div class="eq">
+            Var(S<sub>n</sub>) = Σ<sub>i</sub> Var(X<sub>i</sub>) + 2 Σ<sub>i&lt;j</sub> Cov(X<sub>i</sub>, X<sub>j</sub>) = nσ² &nbsp;(covariances = 0)<br />
+            sd(S<sub>n</sub>) = σ√n &nbsp;(the sum spreads like √n, not like n)<br />
+            sd(X̄<sub>n</sub>) = sd(S<sub>n</sub>)/n = σ/√n &nbsp;(the mean concentrates like 1/√n)<br />
+            sd( √n (X̄<sub>n</sub> − μ) ) = σ &nbsp;(√n is the <em>only</em> scaling that leaves a non-degenerate limit)
+          </div>
+          <p>
+            With the factor n the limit is 0 (the LLN); with a smaller power of n it would blow up; with √n the spread stays at σ, which is why the CLT is stated for √n (X̄<sub>n</sub> − μ).
+            In statistical inference this is the <strong>standard error</strong> σ/√n: a 95% confidence interval is x̄ ± 1.96 s/√n, the t statistic is √n (x̄ − μ<sub>0</sub>)/s, and the precision of any average
+            improves only with the square root of the sample size (four times more data to halve the error). For example, to halve the uncertainty on the mean response time of a service one must measure four times as many requests.
+          </p>
+          <p>
+            <strong>Independence is essential for this scaling.</strong> If the X<sub>i</sub> have correlation ρ ≥ 0 the covariances add n(n − 1)ρσ² to the variance; with ρ &gt; 0 fixed, Var(X̄<sub>n</sub>) → ρσ² and the mean no
+            longer converges to μ. For weakly dependent series (decaying correlations) the √n scaling survives, but the constant changes: for an AR(1) series with parameter ρ, Var(S<sub>n</sub>) ≈ nσ²(1 + ρ)/(1 − ρ),
+            and the <em>effective sample size</em> is n(1 − ρ)/(1 + ρ). Log events and network measurements are often autocorrelated, so the nominal n overstates the information they contain.
+          </p>
+
+          <h2 class="h6 mt-4">Simulation: LLN and CLT</h2>
+          <p class="small">
+            2000 independent replications of X̄<sub>n</sub> for n up to 1000, seeded. Choose a distribution (the Cauchy has no mean and no variance, and is the counterexample).
+            For the Cauchy the centre μ is taken as 0, its median.
+          </p>
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-12 col-md-5 col-lg-4">
+              <label for="dSel" class="form-label">Distribution</label>
+              <select id="dSel" class="form-select"></select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="eIn" class="form-label">ε</label>
+              <input id="eIn" type="text" class="form-control mono" value="0.1" />
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <label for="hSel" class="form-label">n for the histogram</label>
+              <select id="hSel" class="form-select"></select>
+            </div>
+          </div>
+          <div id="simErr" class="text-danger small mb-2" role="alert"></div>
+
+          <h3 class="h6 text-secondary mt-3">LLN: the three modes on the sample mean</h3>
+          <div id="llnOut" class="mb-3"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">Six trajectories of X̄<sub>n</sub> (a.s. convergence: each path settles)</div>
+              <div class="chart-box" id="pathOut"></div>
+            </div>
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">P(|X̄<sub>n</sub> − μ| &gt; ε) and its a.s. version, against the Chebyshev bound</div>
+              <div class="chart-box" id="probOut"></div>
+            </div>
+          </div>
+
+          <h3 class="h6 text-secondary mt-3">CLT and the √n scaling</h3>
+          <div id="cltOut" class="mb-3"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1" id="histTitle">Histogram of Z<sub>n</sub></div>
+              <div class="chart-box" id="histOut"></div>
+            </div>
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">Spread of S<sub>n</sub>, X̄<sub>n</sub> and √n(X̄<sub>n</sub> − μ)</div>
+              <div class="chart-box" id="sdOut"></div>
+            </div>
+          </div>
+
+          <h3 class="h6 text-secondary mt-3">The role of independence (Gaussian data, 4000 replications)</h3>
+          <p class="small">
+            Three sequences with the same N(0, 1) marginals: independent, AR(1) with ρ = 0.5, and fully dependent (all X<sub>i</sub> equal to X<sub>1</sub>).
+          </p>
+          <div id="depOut" class="mb-3"></div>
+
+          <h2 class="h6 mt-4">Conclusions of Exercise 1</h2>
+          <p>
+            The four modes measure different things: a.s. the whole trajectory, in probability a single time, L² the mean squared error, in distribution only the law. The LLN lives in the strong modes
+            (L² and in probability for the weak law, a.s. for the strong law) and says that X̄<sub>n</sub> <em>reaches</em> μ; the CLT lives in the weakest mode and says <em>how</em> it approaches μ, with error σ/√n
+            and a Gaussian shape. The factor √n is the signature of independence through the additivity of variance: lose independence and the rate and even the limit change; lose the mean (Cauchy)
+            and there is no law of large numbers at all.
+          </p>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           EXERCISE 2
+           ========================================================= -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">Exercise 2 · Conditional probability, Bayes' theorem and statistical inference</div>
+        <div class="card-body">
+          <h2 class="h6">Conditional probability</h2>
+          <p>
+            In probability theory, the conditional probability of A given B is the probability of A when we restrict attention to the outcomes in B:
+          </p>
+          <div class="eq">
+            P(A | B) = P(A ∩ B) / P(B), &nbsp;P(B) &gt; 0<br />
+            multiplication rule: P(A ∩ B) = P(A | B) P(B) = P(B | A) P(A)<br />
+            total probability: P(B) = Σ<sub>i</sub> P(B | A<sub>i</sub>) P(A<sub>i</sub>) &nbsp;for a partition A<sub>1</sub>, …, A<sub>k</sub><br />
+            independence: P(A | B) = P(A) &nbsp;⇔ &nbsp;P(A ∩ B) = P(A) P(B)
+          </div>
+          <p>
+            In statistics the same quantity is a <em>conditional relative frequency</em> of a contingency table, f(F | X) = n<sub>ij</sub>/n<sub>i·</sub> (as in Homework 6), and independence is exactly the
+            statement that all conditional distributions are equal. Conditioning is also how we describe a model: a regression is a conditional mean E[Y | X], and a likelihood is a conditional probability of the data
+            given the parameters.
+          </p>
+
+          <h2 class="h6 mt-4">Bayes' theorem and the three components</h2>
+          <p>
+            Swapping the roles of A and B in the multiplication rule gives Bayes' theorem. For a hypothesis (or a parameter value) H and observed data D:
+          </p>
+          <div class="eq">
+            P(H | D) = P(D | H) · P(H) / P(D), &nbsp;P(D) = Σ<sub>h</sub> P(D | h) P(h)<br />
+            for a continuous parameter θ: &nbsp;π(θ | x) = L(θ; x) π(θ) / ∫ L(t; x) π(t) dt &nbsp;∝ &nbsp;L(θ; x) · π(θ)<br />
+            posterior ∝ likelihood × prior &nbsp;&nbsp;(the denominator only normalises)
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped small wrap mb-3">
+              <thead><tr><th>Component</th><th>Meaning</th><th>Where it comes from</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Prior</strong> P(H), π(θ)</td><td>What we believe about H before seeing the data.</td><td>Earlier studies, base rates, expert knowledge, or a deliberately vague choice.</td></tr>
+                <tr><td><strong>Likelihood</strong> P(D | H), L(θ; x)</td><td>How probable the observed data are if H (or θ) were true. As a function of θ it is not a probability distribution over θ.</td><td>The statistical model of the data-generating process.</td></tr>
+                <tr><td><strong>Posterior</strong> P(H | D), π(θ | x)</td><td>What we believe about H after seeing the data: the answer.</td><td>Prior × likelihood, normalised by the evidence P(D).</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>Why updating is central.</strong> Classical inference gives P(D | H), the probability of the data under a hypothesis. What we usually want is P(H | D), how probable the hypothesis is
+            given the data, and Bayes' theorem is the only coherent way to get it: it converts “how well H explains the data” into “how much H is believed”, with the prior as the starting point. The posterior
+            of one batch of data becomes the prior for the next, so evidence accumulates; for independent data the final posterior does not depend on the order or the grouping of the batches. In odds form the update is
+            simply posterior odds = prior odds × likelihood ratio (the <em>Bayes factor</em>).
+          </p>
+
+          <h2 class="h6 mt-4">Example A · Base rates: an intrusion alert</h2>
+          <p class="small">
+            An alert fires. What is the probability that the event is really malicious? It depends on the likelihood (sensitivity and false-positive rate of the detector) <em>and</em> on the prior
+            (how common malicious events are).
+          </p>
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="aPrev" class="form-label">Prevalence (%)</label>
+              <input id="aPrev" type="text" class="form-control mono" value="1" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="aTpr" class="form-label">Sensitivity (%)</label>
+              <input id="aTpr" type="text" class="form-control mono" value="99" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="aFpr" class="form-label">False-positive rate (%)</label>
+              <input id="aFpr" type="text" class="form-control mono" value="5" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <button id="aGo" type="button" class="btn btn-secondary w-100">Compute</button>
+            </div>
+          </div>
+          <div id="aErr" class="text-danger small mb-2" role="alert"></div>
+          <div id="aOut" class="mb-3"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">Posterior after repeated independent alerts (the posterior becomes the next prior)</div>
+              <div id="aSeq"></div>
+            </div>
+            <div class="col-lg-6">
+              <div class="small fw-semibold mb-1">Posterior P(malicious | alert) against the prior prevalence</div>
+              <div class="chart-box" id="aPlot"></div>
+            </div>
+          </div>
+
+          <h2 class="h6 mt-4">Example B · Prior and likelihood on a parameter: the Beta–Binomial model</h2>
+          <p class="small">
+            Let θ be the unknown fraction of login attempts that are malicious. We observe n attempts, k of them malicious: likelihood L(θ) ∝ θ<sup>k</sup>(1 − θ)<sup>n−k</sup> (Binomial).
+            With a Beta(a, b) prior, π(θ) ∝ θ<sup>a−1</sup>(1 − θ)<sup>b−1</sup>, the posterior is again a Beta (conjugacy), with no integral to compute:
+          </p>
+          <div class="eq">
+            posterior = Beta(a + k, b + n − k)<br />
+            posterior mean = (a + k)/(a + b + n) = w · (a/(a + b)) + (1 − w) · (k/n), &nbsp;w = (a + b)/(a + b + n)
+          </div>
+          <p class="small">
+            The posterior mean is a weighted average of the prior mean and the maximum-likelihood estimate k/n; the prior acts like a + b “pseudo-observations” and its weight w vanishes as n grows.
+          </p>
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-12 col-md-6 col-lg-4">
+              <label for="bPrior" class="form-label">Prior</label>
+              <select id="bPrior" class="form-select"></select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="bN" class="form-label">Attempts n</label>
+              <input id="bN" type="number" min="1" max="100000" step="1" value="20" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="bK" class="form-label">Malicious k</label>
+              <input id="bK" type="number" min="0" max="100000" step="1" value="5" class="form-control" />
+            </div>
+            <div class="col-12 col-md-3 col-lg-2">
+              <button id="bGo" type="button" class="btn btn-secondary w-100">Update</button>
+            </div>
+          </div>
+          <div id="bErr" class="text-danger small mb-2" role="alert"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+              <div class="chart-box" id="bPlot"></div>
+              <div class="small text-secondary mt-1">The likelihood curve is rescaled to area 1 to be comparable; it equals the posterior under a uniform prior.</div>
+            </div>
+            <div class="col-lg-6"><div id="bOut"></div></div>
+          </div>
+          <div class="small fw-semibold mb-1">Influence of the prior: the same observed proportion (k/n) at growing sample size, for the four priors</div>
+          <div id="bSens" class="mb-3"></div>
+
+          <h2 class="h6 mt-4">Example C · Likelihoods multiply: a toy naive Bayes spam filter</h2>
+          <p class="small">
+            Assume the vocabulary below and, from 100 spam and 100 legitimate (“ham”) training emails, the number of emails of each class containing each word (smoothed as (count + 1)/(100 + 2)). Naive Bayes
+            treats the words as independent given the class, so the likelihood is a product and the log-odds are a sum: log-posterior-odds = log-prior-odds + Σ log-likelihood-ratios. Each word, present or absent, shifts the odds.
+          </p>
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-12 col-lg-6">
+              <label for="cMsg" class="form-label">Message (words are matched against the vocabulary)</label>
+              <input id="cMsg" type="text" class="form-control mono" value="urgent: click to win a free offer" />
+            </div>
+            <div class="col-6 col-lg-2">
+              <label for="cPrior" class="form-label">Prior P(spam) (%)</label>
+              <input id="cPrior" type="text" class="form-control mono" value="40" />
+            </div>
+            <div class="col-6 col-lg-2">
+              <button id="cGo" type="button" class="btn btn-secondary w-100">Classify</button>
+            </div>
+          </div>
+          <div id="cErr" class="text-danger small mb-2" role="alert"></div>
+          <div id="cOut" class="mb-4"></div>
+
+          <h2 class="h6 mt-4">Advantages, limitations, and the influence on the conclusions</h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="small fw-semibold mb-1">Advantages</div>
+              <ul class="small">
+                <li>It answers the question that is asked: the probability of the hypothesis or of the parameter, given the data (a 95% credible interval means “θ is in it with probability 0.95”).</li>
+                <li>It uses prior knowledge (base rates, earlier studies) in a formal way, which is decisive with little data (Example A).</li>
+                <li>Sequential updating is natural: today's posterior is tomorrow's prior, and the answer is available at every sample size, also for n = 0 or k = 0, where the MLE is degenerate.</li>
+                <li>Complex models are built by multiplying likelihoods (Example C) and uncertainty propagates to predictions.</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <div class="small fw-semibold mb-1">Limitations</div>
+              <ul class="small">
+                <li>The prior is a choice. Two analysts with different priors reach different conclusions on small samples (Example B), and “non-informative” priors are not unique (uniform and Jeffreys differ).</li>
+                <li>A badly wrong informative prior needs much data to be overcome (the Beta(30, 70) prior in Example B).</li>
+                <li>Computation: only conjugate models give closed forms; in general the normalising integral needs numerical methods (MCMC, variational inference).</li>
+                <li>The model can be wrong: the independence of Example C is false for real text, so the probabilities are over-confident even when the ranking is useful.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="mt-2">
+            <strong>Influence of prior and likelihood.</strong> The posterior is a compromise: with few data it stays close to the prior, with many data the likelihood dominates and the posteriors from different priors merge
+            (the Bernstein–von Mises phenomenon, visible in the last table of Example B, where the weight of the prior is (a + b)/(a + b + n)). A sharp prior or a very informative likelihood moves the conclusion
+            more; the prior probability multiplies the odds directly, so a rare event stays rare after a single imperfect test (Example A: 99% sensitivity and 5% false positives, yet only about one alert in six is real when prevalence is 1%). Good practice is to report
+            the prior, run a sensitivity analysis with several priors, and let the data speak when n is large.
+          </p>
+
+          <h2 class="h6 mt-4">Conclusions of Exercise 2</h2>
+          <p class="mb-0">
+            Conditional probability is the language, and Bayes' theorem is the rule that turns P(D | H) into P(H | D): posterior ∝ likelihood × prior. Prior and likelihood have distinct roles (belief before the data,
+            information in the data), and the posterior carries both. Bayesian updating is central because it is the coherent way to accumulate evidence and to include prior knowledge, at the price of having to state a prior, whose weight
+            fades with the amount of data.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <footer class="py-3 my-4">
+      <p class="text-center text-body-secondary">© 2026 Giorgio N.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var $ = function (id) { return document.getElementById(id); };
+
+        /* ============================== helpers ============================== */
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        function gauss(r) {
+          var u = 1 - r(), v = r();
+          return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+        function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+        function fmt(v) {
+          if (v === 0) return "0";
+          var a = Math.abs(v);
+          if (a >= 1e5 || a < 1e-2) return v.toExponential(0).replace("e+", "e");
+          return String(parseFloat(v.toPrecision(3)));
+        }
+        function ex(v) { return v === 0 ? "0" : v.toExponential(2); }
+        function p4(v) { return v.toFixed(4); }
+        function pct(v) { return (100 * v).toFixed(2) + "%"; }
+        function niceTicks(lo, hi, cnt) {
+          var raw = (hi - lo) / cnt, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+          var step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag, out = [], v = Math.ceil(lo / step - 1e-9) * step;
+          for (; v <= hi + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+          return out;
+        }
+        function num(id) { return Number(String($(id).value).trim().replace(",", ".")); }
+
+        function plot(o) {
+          var W = 560, H = 250, ml = 54, mr = 12, mt = 10, mb = o.legend ? 62 : 42;
+          var iw = W - ml - mr, ih = H - mt - mb;
+          var tx = o.xlog ? Math.log10 : function (v) { return v; };
+          var ty = o.ylog ? Math.log10 : function (v) { return v; };
+          var xl = Infinity, xh = -Infinity, yl = Infinity, yh = -Infinity;
+          o.series.forEach(function (s) {
+            s.xs.forEach(function (x) { xl = Math.min(xl, x); xh = Math.max(xh, x); });
+            s.ys.forEach(function (y) { yl = Math.min(yl, y); yh = Math.max(yh, y); });
+          });
+          if (o.ymin !== undefined) yl = o.ymin;
+          if (o.ymax !== undefined) yh = o.ymax;
+          var x0 = tx(xl), x1 = tx(xh), y0 = ty(yl), y1 = ty(yh);
+          if (x1 === x0) x1 = x0 + 1;
+          if (y1 === y0) { y0 -= 1; y1 += 1; }
+          if (o.ylog) { y0 = Math.floor(y0 - 0.2); y1 = Math.ceil(y1 + 0.2); }
+          function X(v) { return ml + ((tx(v) - x0) / (x1 - x0)) * iw; }
+          function Y(v) { return mt + ih - ((ty(v) - y0) / (y1 - y0)) * ih; }
+          var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="' + o.aria + '">';
+          function logTicks(a, b) { var out = [], e; for (e = Math.ceil(a - 1e-9); e <= Math.floor(b + 1e-9); e++) out.push(Math.pow(10, e)); return out; }
+          var xt = o.xlog ? logTicks(x0, x1) : niceTicks(x0, x1, 6);
+          var yt = o.ylog ? logTicks(y0, y1) : niceTicks(y0, y1, 5);
+          yt.forEach(function (v) {
+            s += '<line x1="' + ml + '" y1="' + Y(v) + '" x2="' + (ml + iw) + '" y2="' + Y(v) + '" stroke="#e9ecef"/>';
+            s += '<text x="' + (ml - 5) + '" y="' + (Y(v) + 3) + '" font-size="10" text-anchor="end" fill="#495057">' + fmt(v) + "</text>";
+          });
+          xt.forEach(function (v) {
+            s += '<line x1="' + X(v) + '" y1="' + (mt + ih) + '" x2="' + X(v) + '" y2="' + (mt + ih + 4) + '" stroke="#6c757d"/>';
+            s += '<text x="' + X(v) + '" y="' + (mt + ih + 15) + '" font-size="10" text-anchor="middle" fill="#495057">' + fmt(v) + "</text>";
+          });
+          s += '<line x1="' + ml + '" y1="' + (mt + ih) + '" x2="' + (ml + iw) + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          s += '<line x1="' + ml + '" y1="' + mt + '" x2="' + ml + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          (o.hlines || []).forEach(function (h) {
+            if (ty(h.y) < y0 || ty(h.y) > y1) return;
+            s += '<line x1="' + ml + '" y1="' + Y(h.y) + '" x2="' + (ml + iw) + '" y2="' + Y(h.y) + '" stroke="#6c757d" stroke-dasharray="2 3"/>';
+            s += '<text x="' + (ml + iw - 2) + '" y="' + (Y(h.y) - 3) + '" font-size="10" text-anchor="end" fill="#6c757d">' + h.label + "</text>";
+          });
+          o.series.forEach(function (sr) {
+            var pts = sr.xs.map(function (x, i) { return X(x).toFixed(1) + "," + Y(Math.min(Math.max(sr.ys[i], yl), yh)).toFixed(1); }).join(" ");
+            s += '<polyline points="' + pts + '" fill="none" stroke="' + sr.color + '" stroke-width="1.6"' + (sr.dash ? ' stroke-dasharray="' + sr.dash + '"' : "") + "/>";
+            if (o.dots !== false) sr.xs.forEach(function (x, i) {
+              s += '<circle cx="' + X(x) + '" cy="' + Y(Math.min(Math.max(sr.ys[i], yl), yh)) + '" r="2.3" fill="' + sr.color + '"><title>' + sr.name + ", " + o.xName + " = " + fmt(x) + ": " + ex(sr.ys[i]) + "</title></circle>";
+            });
+          });
+          s += '<text x="' + (ml + iw / 2) + '" y="' + (mt + ih + 31) + '" font-size="11" text-anchor="middle" fill="#495057">' + o.xLabel + "</text>";
+          s += '<text transform="translate(12 ' + (mt + ih / 2) + ') rotate(-90)" font-size="11" text-anchor="middle" fill="#495057">' + o.yLabel + "</text>";
+          if (o.legend) {
+            var lw = o.legW || 130;
+            o.series.filter(function (q) { return !q.nolegend; }).forEach(function (q, k) {
+              var lx = ml + k * lw;
+              s += '<line x1="' + lx + '" y1="' + (H - 9) + '" x2="' + (lx + 16) + '" y2="' + (H - 9) + '" stroke="' + q.color + '" stroke-width="2"' + (q.dash ? ' stroke-dasharray="' + q.dash + '"' : "") + "/>";
+              s += '<text x="' + (lx + 20) + '" y="' + (H - 6) + '" font-size="10" fill="#495057">' + q.name + "</text>";
+            });
+          }
+          return s + "</svg>";
+        }
+
+        function table(head, rows, small) {
+          var h = '<div class="table-responsive"><table class="table table-sm table-striped small mb-0 tight"><thead><tr>';
+          head.forEach(function (c) { h += "<th>" + c + "</th>"; });
+          h += "</tr></thead><tbody>";
+          rows.forEach(function (r) {
+            h += "<tr>";
+            r.forEach(function (c, i) { h += (i === 0 ? "<td>" : '<td class="mono">') + c + "</td>"; });
+            h += "</tr>";
+          });
+          return h + "</tbody></table></div>" + (small ? '<p class="small text-secondary mt-2 mb-0">' + small + "</p>" : "");
+        }
+
+        /* ---- special functions ---- */
+        function lgamma(x) {
+          var c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+          var y = x, tmp = x + 5.5, ser = 1.000000000190015, j;
+          tmp -= (x + 0.5) * Math.log(tmp);
+          for (j = 0; j < 6; j++) { y += 1; ser += c[j] / y; }
+          return -tmp + Math.log((2.5066282746310005 * ser) / x);
+        }
+        var SQ2 = Math.SQRT2, SQ2PI = Math.sqrt(2 * Math.PI), SQPI = Math.sqrt(Math.PI);
+        function pdfN(t) { return Math.exp(-0.5 * t * t) / SQ2PI; }
+        function erfPos(z) {
+          var a = Math.abs(z), u = a, s = 0, k = 0;
+          while (k < 2000) { s += u; u = (u * 2 * a * a) / (2 * k + 3); k++; if (u < 1e-17 * s) break; }
+          var r = (2 / SQPI) * Math.exp(-a * a) * s;
+          return z < 0 ? -r : r;
+        }
+        function mills(x, D) { var t = x, k; for (k = D; k >= 1; k--) t = x + k / t; return 1 / t; }
+        function Phi(x) {
+          var ax = Math.abs(x);
+          if (ax < 3) return 0.5 * (1 + erfPos(x / SQ2));
+          var q = pdfN(ax) * mills(ax, 200);
+          return x > 0 ? 1 - q : q;
+        }
+        function betacf(a, b, x) {
+          var MAXIT = 400, EPS = 3e-16, FPMIN = 1e-300, qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - (qab * x) / qap, m, m2, aa, del, h;
+          if (Math.abs(d) < FPMIN) d = FPMIN;
+          d = 1 / d; h = d;
+          for (m = 1; m <= MAXIT; m++) {
+            m2 = 2 * m;
+            aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+            d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+            c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+            d = 1 / d; h *= d * c;
+            aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+            d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+            c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+            d = 1 / d; del = d * c; h *= del;
+            if (Math.abs(del - 1) < EPS) break;
+          }
+          return h;
+        }
+        function betaI(x, a, b) {
+          if (x <= 0) return 0;
+          if (x >= 1) return 1;
+          var bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+          if (x < (a + 1) / (a + b + 2)) return (bt * betacf(a, b, x)) / a;
+          return 1 - (bt * betacf(b, a, 1 - x)) / b;
+        }
+        function betaQ(p, a, b) {
+          var lo = 0, hi = 1, i, mid;
+          for (i = 0; i < 70; i++) { mid = 0.5 * (lo + hi); if (betaI(mid, a, b) < p) lo = mid; else hi = mid; }
+          return 0.5 * (lo + hi);
+        }
+        function betaPdf(x, a, b) { return Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + (a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x)); }
+
+        /* ============================== EXERCISE 1 ============================== */
+        /* ---- counterexamples (exact) ---- */
+        function renderCx() {
+          var which = $("cxSel").value, eps = Number($("cxEps").value), rows = [], note = "", head, ns, k;
+          if (which === "A") {
+            ns = [2, 10, 100, 1000, 10000];
+            head = ["n", "P(|X<sub>n</sub>| &gt; ε)", "E[X<sub>n</sub>²]", "P( sup<sub>m≥n</sub> |X<sub>m</sub>| &gt; ε )"];
+            ns.forEach(function (n) {
+              var p = Math.pow(2, -Math.floor(Math.log2(n)));
+              rows.push([n, ex(p), ex(p), "1"]);
+            });
+            var r = rng(3), w = r(), hits = [];
+            for (k = 0; k <= 12; k++) hits.push(Math.pow(2, k) + Math.floor(w * Math.pow(2, k)));
+            note = "Both P(|X<sub>n</sub>| &gt; ε) = 2<sup>−⌊log₂ n⌋</sup> and E[X<sub>n</sub>²] go to 0 (convergence in probability and in L²), but the a.s. criterion stays at 1: " +
+              "for every ω, however large n, a later bump still hits it. For the outcome ω = " + w.toFixed(4) + " the times with X<sub>n</sub>(ω) = 1 are n = " + hits.join(", ") + ", … (one for each level k, forever): the path does not converge.";
+          } else if (which === "B") {
+            ns = [2, 10, 100, 1000, 10000];
+            head = ["n", "P(|X<sub>n</sub>| &gt; ε) = 1/n²", "E[X<sub>n</sub>²]", "P( sup<sub>m≥n</sub> |X<sub>m</sub>| &gt; ε ) = 1/n"];
+            ns.forEach(function (n) { rows.push([n, ex(1 / (n * n)), "1", ex(1 / n)]); });
+            note = "The probability of a spike goes to 0 and so does the probability of any spike after time n: X<sub>n</sub> → 0 almost surely (and in probability), with P(sup<sub>m≥n</sub> |X<sub>m</sub>| &gt; ε) = 1 − Π<sub>m≥n</sub>(1 − 1/m²) = 1/n exactly. " +
+              "But E[X<sub>n</sub>²] = n²·(1/n²) = 1 for every n: no convergence in L². (Valid for ε &lt; 2.)";
+          } else {
+            var pOdd = 2 * (1 - Phi(eps / 2));
+            ns = [10, 11, 100, 101, 1000, 1001];
+            head = ["n", "P(|X<sub>n</sub> − X| &gt; ε)", "E[(X<sub>n</sub> − X)²]", "sup<sub>x</sub> |F<sub>n</sub>(x) − F(x)|"];
+            ns.forEach(function (n) { rows.push([n + (n % 2 ? " (odd)" : " (even)"), n % 2 ? ex(pOdd) : "0", n % 2 ? "4" : "0", "0"]); });
+            note = "Every X<sub>n</sub> has exactly the N(0, 1) law of X, so the distance between the distribution functions is 0 for all n (convergence in distribution holds trivially). " +
+              "But for odd n, X<sub>n</sub> − X = −2Z and P(2|Z| &gt; ε) = 2(1 − Φ(ε/2)) = " + pOdd.toFixed(4) + " does not go to 0: no convergence in probability, and none in L² (the squared error is 4).";
+          }
+          $("cxOut").innerHTML = table(head, rows, note);
+        }
+
+        /* ---- distributions ---- */
+        var DISTS = {
+          ber: { name: "Bernoulli(0.3)", mu: 0.3, v: 0.21, gen: function (r) { return r() < 0.3 ? 1 : 0; } },
+          uni: { name: "Uniform(0, 1)", mu: 0.5, v: 1 / 12, gen: function (r) { return r(); } },
+          exp: { name: "Exponential(1)", mu: 1, v: 1, gen: function (r) { return -Math.log(1 - r()); } },
+          logn: { name: "Lognormal(0, 1), heavy right tail", mu: Math.exp(0.5), v: (Math.E - 1) * Math.E, gen: function (r) { return Math.exp(gauss(r)); } },
+          cau: { name: "Cauchy(0, 1): no mean, no variance", mu: 0, v: null, gen: function (r) { return Math.tan(Math.PI * (r() - 0.5)); } }
+        };
+        var NS = [1, 2, 5, 10, 30, 100, 300, 1000];
+        var M = 2000, NMAX = 1000;
+        var SIM = null;
+        function simulate(key) {
+          var D = DISTS[key], r = rng(2026), S = NS.map(function () { return new Float64Array(M); }), SUP = NS.map(function () { return new Float64Array(M); });
+          var devs = new Float64Array(NMAX), PS = [], seen = {}, k, v, rep, m, s, idx, cur, paths = [];
+          for (k = 0; k <= 60; k++) { v = Math.round(Math.pow(10, k / 20)); if (v <= NMAX && !seen[v]) { seen[v] = 1; PS.push(v); } }
+          var psSet = {}; PS.forEach(function (q) { psSet[q] = 1; });
+          for (rep = 0; rep < M; rep++) {
+            s = 0; idx = 0;
+            var pm = rep < 6 ? [] : null;
+            for (m = 1; m <= NMAX; m++) {
+              s += D.gen(r);
+              devs[m - 1] = Math.abs(s / m - D.mu);
+              if (pm && psSet[m]) pm.push(s / m);
+              if (idx < NS.length && m === NS[idx]) { S[idx][rep] = s; idx++; }
+            }
+            cur = 0; idx = NS.length - 1;
+            for (m = NMAX; m >= 1; m--) {
+              if (devs[m - 1] > cur) cur = devs[m - 1];
+              if (idx >= 0 && m === NS[idx]) { SUP[idx][rep] = cur; idx--; }
+            }
+            if (pm) paths.push(pm);
+          }
+          return { key: key, S: S, SUP: SUP, PS: PS, paths: paths };
+        }
+
+        function stats(arr) {
+          var n = arr.length, m = 0, v = 0, i;
+          for (i = 0; i < n; i++) m += arr[i];
+          m /= n;
+          for (i = 0; i < n; i++) v += (arr[i] - m) * (arr[i] - m);
+          return { mean: m, sd: Math.sqrt(v / (n - 1)) };
+        }
+        function ksNormal(z) {
+          var a = Array.prototype.slice.call(z).sort(function (p, q) { return p - q; }), n = a.length, d = 0, i, F;
+          for (i = 0; i < n; i++) { F = Phi(a[i]); d = Math.max(d, Math.abs((i + 1) / n - F), Math.abs(F - i / n)); }
+          return d;
+        }
+
+        function renderSim() {
+          var D = DISTS[$("dSel").value], eps = num("eIn"), i, j;
+          $("simErr").textContent = "";
+          if (!isFinite(eps) || eps <= 0 || eps > 100) { $("simErr").textContent = "ε must be a positive number."; return; }
+          var cau = D.v === null, rows = [], mse, pp, ps;
+          NS.forEach(function (n, a) {
+            var cntP = 0, cntS = 0, sq = 0;
+            for (j = 0; j < M; j++) {
+              var dv = Math.abs(SIM.S[a][j] / n - D.mu);
+              if (dv > eps) cntP++;
+              if (SIM.SUP[a][j] > eps) cntS++;
+              sq += dv * dv;
+            }
+            pp = cntP / M; ps = cntS / M; mse = sq / M;
+            rows.push([n, pp.toFixed(4), ps.toFixed(4), cau ? "n/a" : Math.min(1, D.v / (n * eps * eps)).toFixed(4), ex(mse), cau ? "∞" : ex(D.v / n)]);
+          });
+          var note = cau
+            ? "For the Cauchy, X̄<sub>n</sub> is again standard Cauchy: P(|X̄<sub>n</sub>| &gt; ε) = 1 − (2/π)arctan(ε) = " + (1 - (2 / Math.PI) * Math.atan(eps)).toFixed(4) + " for every n (compare the first column), the a.s. criterion stays high, and the empirical mean-square error is meaningless (the true one is infinite). No mode of convergence holds."
+            : "P(|X̄<sub>n</sub> − μ| &gt; ε) is the in-probability criterion; the next column is the a.s. criterion P(sup<sub>m≥n</sub> |X̄<sub>m</sub> − μ| &gt; ε) over m ≤ 1000 (at n = 1000 it coincides with the first). " +
+              "The empirical mean-square error E[(X̄<sub>n</sub> − μ)²] matches σ²/n and the Chebyshev bound σ²/(nε²) is never violated (it can be far from the true probability). Resolution of each estimated probability: 1/2000.";
+          $("llnOut").innerHTML = table(["n", "P(|X̄ − μ| &gt; ε)", "P(sup<sub>m≥n</sub> |X̄<sub>m</sub> − μ| &gt; ε)", "Chebyshev bound", "E[(X̄ − μ)²]", "σ²/n"], rows, note);
+
+          /* paths */
+          var cols = ["#0d6efd", "#c2410c", "#198754", "#6f42c1", "#b02a37", "#0f766e"];
+          $("pathOut").innerHTML = plot({ aria: "Trajectories of the sample mean", xLabel: "n (log scale)", yLabel: "sample mean X̄ₙ", xlog: true, xName: "n", dots: false,
+            series: SIM.paths.map(function (p, k) { return { name: "path " + (k + 1), color: cols[k], xs: SIM.PS, ys: p }; }), hlines: [{ y: D.mu, label: "μ" }] });
+          /* probability chart */
+          var FL = 2.5e-4, P1 = [], P2 = [], P3 = [];
+          NS.forEach(function (n, a) {
+            var c1 = 0, c2 = 0;
+            for (j = 0; j < M; j++) { if (Math.abs(SIM.S[a][j] / n - D.mu) > eps) c1++; if (SIM.SUP[a][j] > eps) c2++; }
+            P1.push(Math.max(c1 / M, FL)); P2.push(Math.max(c2 / M, FL)); P3.push(cau ? 1 : Math.max(Math.min(1, D.v / (n * eps * eps)), FL));
+          });
+          var ser = [{ name: "in probability", color: "#0d6efd", xs: NS, ys: P1 }, { name: "a.s. criterion (sup)", color: "#fd7e14", xs: NS, ys: P2, dash: "4 3" }];
+          if (!cau) ser.push({ name: "Chebyshev bound", color: "#6c757d", xs: NS, ys: P3, dash: "2 3" });
+          $("probOut").innerHTML = plot({ aria: "Deviation probability against n", xLabel: "n (log scale)", yLabel: "probability (log scale)", xlog: true, ylog: true, xName: "n", legend: true, legW: 150, series: ser }) +
+            '<div class="small text-secondary mt-1">Probabilities below 1/2000 are drawn at 2.5·10<sup>−4</sup>.</div>';
+
+          /* CLT */
+          if (cau) {
+            $("cltOut").innerHTML = '<div class="alert alert-secondary small mb-0">The Cauchy distribution has infinite variance (and no mean), so the CLT does not apply: S<sub>n</sub>/n is again standard Cauchy, and no scaling by √n gives a non-degenerate limit with finite variance. Choose another distribution to see the CLT.</div>';
+            $("histTitle").innerHTML = "Histogram of Z<sub>n</sub>";
+            $("histOut").innerHTML = '<div class="small text-secondary p-2">Not available for the Cauchy.</div>';
+            $("sdOut").innerHTML = '<div class="small text-secondary p-2">Not available for the Cauchy.</div>';
+            return;
+          }
+          var sig = Math.sqrt(D.v), crow = [], sdS = [], sdM = [], sdZ = [], thS = [], thM = [], Zsel = null, hn = Number($("hSel").value);
+          NS.forEach(function (n, a) {
+            var Zn = new Float64Array(M), Sn = new Float64Array(M), Mn = new Float64Array(M), Wn = new Float64Array(M);
+            for (j = 0; j < M; j++) {
+              Sn[j] = SIM.S[a][j]; Mn[j] = Sn[j] / n; Zn[j] = (Sn[j] - n * D.mu) / (sig * Math.sqrt(n)); Wn[j] = Math.sqrt(n) * (Mn[j] - D.mu);
+            }
+            var a1 = stats(Sn).sd, a2 = stats(Mn).sd, a3 = stats(Wn).sd;
+            sdS.push(a1); sdM.push(a2); sdZ.push(a3); thS.push(sig * Math.sqrt(n)); thM.push(sig / Math.sqrt(n));
+            crow.push([n, a1.toFixed(4), (sig * Math.sqrt(n)).toFixed(4), a2.toFixed(4), (sig / Math.sqrt(n)).toFixed(4), a3.toFixed(4), ksNormal(Zn).toFixed(4)]);
+            if (n === hn) Zsel = Zn;
+          });
+          $("cltOut").innerHTML = table(["n", "sd(S<sub>n</sub>)", "σ√n", "sd(X̄<sub>n</sub>)", "σ/√n", "sd(√n(X̄<sub>n</sub> − μ))", "KS distance of Z<sub>n</sub> from N(0,1)"], crow,
+            "With independent observations the empirical spreads follow σ√n and σ/√n, and √n(X̄<sub>n</sub> − μ) keeps the constant spread σ = " + sig.toFixed(4) + ". The Kolmogorov–Smirnov distance between the standardised sum Z<sub>n</sub> and N(0, 1) decreases with n " +
+            "(the noise floor with 2000 replications is about 0.02; for a lattice law such as the Bernoulli the distance at small n is dominated by the discreteness, and skewed laws such as the lognormal need much larger n).");
+
+          /* histogram */
+          $("histTitle").innerHTML = "Histogram of Z<sub>n</sub> = (S<sub>n</sub> − nμ)/(σ√n) for n = " + hn + ", against the N(0, 1) density";
+          var NB = 28, lo = -4, hi = 4, bw = (hi - lo) / NB, cnt = new Array(NB).fill(0), W = 560, H = 230, ml = 40, mr = 12, mt = 10, mb = 34, iw = W - ml - mr, ih = H - mt - mb, k;
+          for (j = 0; j < M; j++) { k = Math.floor((Zsel[j] - lo) / bw); if (k >= 0 && k < NB) cnt[k]++; }
+          var dens = cnt.map(function (c) { return c / (M * bw); }), ymax = Math.max(0.45, Math.max.apply(null, dens) * 1.1);
+          function HX(v) { return ml + ((v - lo) / (hi - lo)) * iw; }
+          function HY(v) { return mt + ih - (v / ymax) * ih; }
+          var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="Histogram of the standardised sum">';
+          s += '<line x1="' + ml + '" y1="' + (mt + ih) + '" x2="' + (ml + iw) + '" y2="' + (mt + ih) + '" stroke="#6c757d"/><line x1="' + ml + '" y1="' + mt + '" x2="' + ml + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          dens.forEach(function (d, b) { s += '<rect x="' + HX(lo + b * bw).toFixed(1) + '" y="' + HY(d).toFixed(1) + '" width="' + ((bw / (hi - lo)) * iw - 1).toFixed(1) + '" height="' + (mt + ih - HY(d)).toFixed(1) + '" fill="#9ec5fe" stroke="#6ea8fe"/>'; });
+          var pts = []; for (k = 0; k <= 160; k++) { var xv = lo + (k / 160) * (hi - lo); pts.push(HX(xv).toFixed(1) + "," + HY(pdfN(xv)).toFixed(1)); }
+          s += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="#b02a37" stroke-width="2"/>';
+          [-4, -2, 0, 2, 4].forEach(function (v) { s += '<text x="' + HX(v) + '" y="' + (mt + ih + 14) + '" font-size="10" text-anchor="middle" fill="#495057">' + v + "</text>"; });
+          [0, 0.2, 0.4].forEach(function (v) { s += '<text x="' + (ml - 5) + '" y="' + (HY(v) + 3) + '" font-size="10" text-anchor="end" fill="#495057">' + v + "</text>"; });
+          s += '<text x="' + (ml + iw / 2) + '" y="' + (H - 4) + '" font-size="11" text-anchor="middle" fill="#495057">z (red curve: standard normal density)</text></svg>';
+          $("histOut").innerHTML = s;
+          $("sdOut").innerHTML = plot({ aria: "Spread against n", xLabel: "n (log scale)", yLabel: "standard deviation (log scale)", xlog: true, ylog: true, xName: "n", legend: true, legW: 150,
+            series: [
+              { name: "sd(Sₙ)", color: "#0d6efd", xs: NS, ys: sdS }, { name: "σ√n", color: "#0d6efd", xs: NS, ys: thS, dash: "3 3", nolegend: true },
+              { name: "sd(X̄ₙ)", color: "#198754", xs: NS, ys: sdM }, { name: "σ/√n", color: "#198754", xs: NS, ys: thM, dash: "3 3", nolegend: true },
+              { name: "sd(√n(X̄ₙ−μ))", color: "#c2410c", xs: NS, ys: sdZ }
+            ] }) + '<div class="small text-secondary mt-1">Dashed: theory (σ√n and σ/√n). Log scale on both axes.</div>';
+        }
+
+        /* ---- role of independence ---- */
+        function renderDep() {
+          var r = rng(77), R = 4000, CK = [10, 100, 1000], rho = 0.5, sr = Math.sqrt(1 - rho * rho);
+          var sI = [[], [], []], sA = [[], [], []], sD = [[], [], []], j, i, a, x, xi, s1, s2, s3, x1;
+          for (j = 0; j < R; j++) {
+            x = gauss(r); x1 = x; s1 = 0; s2 = 0; s3 = 0; a = 0;
+            for (i = 1; i <= 1000; i++) {
+              xi = gauss(r); s1 += xi;
+              if (i > 1) x = rho * x + sr * gauss(r);
+              s2 += x; s3 += x1;
+              if (i === CK[a]) { sI[a].push(s1); sA[a].push(s2); sD[a].push(s3); a++; }
+            }
+          }
+          function vr(z) { return Math.pow(stats(z).sd, 2); }
+          function thAR(n) { var t = n, k; for (k = 1; k < n; k++) t += 2 * (n - k) * Math.pow(rho, k); return t; }
+          var rows = [];
+          CK.forEach(function (n, a2) {
+            var vi = vr(sI[a2]), va = vr(sA[a2]), vd = vr(sD[a2]);
+            rows.push(["independent", n, vi.toFixed(1), n, (vi / n).toFixed(3), (vi / (n * n)).toFixed(4), "σ√n"]);
+            rows.push(["AR(1), ρ = 0.5", n, va.toFixed(1), thAR(n).toFixed(1), (va / n).toFixed(3), (va / (n * n)).toFixed(4), "σ√n·√((1+ρ)/(1−ρ)) ≈ 1.73·σ√n"]);
+            rows.push(["fully dependent", n, vd.toFixed(1), n * n, (vd / n).toFixed(1), (vd / (n * n)).toFixed(4), "σn (no √n)"]);
+          });
+          $("depOut").innerHTML = table(["Dependence", "n", "Var(S<sub>n</sub>) empirical", "Var(S<sub>n</sub>) exact", "Var(S<sub>n</sub>)/n", "Var(S<sub>n</sub>)/n²", "sd(S<sub>n</sub>) scales as"], rows,
+            "Independent: Var(S<sub>n</sub>) = n. AR(1): Var(S<sub>n</sub>)/n tends to (1 + ρ)/(1 − ρ) = 3, so n observations carry the information of n/3 independent ones. Fully dependent: Var(S<sub>n</sub>) = n², hence X̄<sub>n</sub> = X<sub>1</sub> never converges: the LLN needs more than identical marginals.");
+        }
+
+        /* ============================== EXERCISE 2 ============================== */
+        function renderA() {
+          var err = $("aErr"); err.textContent = "";
+          var pr = num("aPrev") / 100, tp = num("aTpr") / 100, fp = num("aFpr") / 100;
+          if (!(pr > 0 && pr < 1) || !(tp > 0 && tp <= 1) || !(fp > 0 && fp < 1)) { err.textContent = "Prevalence in (0, 100), sensitivity in (0, 100], false-positive rate in (0, 100)."; return; }
+          var N = 100000, mal = pr * N, ben = N - mal, hit = tp * mal, fa = fp * ben, post = hit / (hit + fa);
+          var h = table(["Quantity", "Value"], [
+            ["Malicious events among 100,000 (prior × N)", mal.toFixed(0)],
+            ["Malicious and alerted (likelihood: sensitivity × malicious)", hit.toFixed(0)],
+            ["Benign events", ben.toFixed(0)],
+            ["Benign but alerted (false-positive rate × benign)", fa.toFixed(0)],
+            ["P(alert) = total probability", pct((hit + fa) / N)],
+            ["Posterior P(malicious | alert) = hits/(hits + false alarms)", "<strong>" + pct(post) + "</strong>"],
+            ["Likelihood ratio (sensitivity / false-positive rate)", (tp / fp).toFixed(2)]
+          ], "Bayes' theorem on counts: P(H | alert) = P(alert | H) P(H) / [P(alert | H) P(H) + P(alert | not H) P(not H)] = " + hit.toFixed(0) + " / (" + hit.toFixed(0) + " + " + fa.toFixed(0) + ") = " + pct(post) + ".");
+          $("aOut").innerHTML = h;
+          var odds = pr / (1 - pr), lr = tp / fp, rows = [], k, pk;
+          for (k = 0; k <= 4; k++) { pk = (odds * Math.pow(lr, k)) / (1 + odds * Math.pow(lr, k)); rows.push([k, (odds * Math.pow(lr, k)).toPrecision(4), pct(pk)]); }
+          $("aSeq").innerHTML = table(["Alerts k", "posterior odds = prior odds × LR<sup>k</sup>", "P(malicious)"], rows,
+            "Valid if the alerts are conditionally independent given the class (a strong assumption: repeated alerts from the same signature are usually correlated).");
+          var xs = [], ys = [], e;
+          for (e = -4; e <= Math.log10(0.5); e += 0.1) { var q = Math.pow(10, e); xs.push(q); ys.push((tp * q) / (tp * q + fp * (1 - q))); }
+          $("aPlot").innerHTML = plot({ aria: "Posterior against prevalence", xLabel: "prior prevalence (log scale)", yLabel: "P(malicious | alert)", xlog: true, xName: "prevalence", dots: false, ymin: 0, ymax: 1,
+            series: [{ name: "posterior", color: "#0d6efd", xs: xs, ys: ys }], hlines: [{ y: post, label: "current: " + pct(post) }] });
+        }
+
+        var PRIORS = [
+          { name: "Uniform Beta(1, 1)", a: 1, b: 1 },
+          { name: "Jeffreys Beta(0.5, 0.5)", a: 0.5, b: 0.5 },
+          { name: "Informative, mean 2%: Beta(2, 98)", a: 2, b: 98 },
+          { name: "Misleading, mean 30%: Beta(30, 70)", a: 30, b: 70 }
+        ];
+        function renderB() {
+          var err = $("bErr"); err.textContent = "";
+          var pi = Number($("bPrior").value), P = PRIORS[pi], n = Number($("bN").value), k = Number($("bK").value);
+          if (!Number.isInteger(n) || n < 1 || n > 100000 || !Number.isInteger(k) || k < 0 || k > n) { err.textContent = "n must be an integer in [1, 100000] and k an integer in [0, n]."; return; }
+          var a = P.a + k, b = P.b + n - k, xs = [], pr = [], lk = [], po = [], i, x, N = 400;
+          for (i = 0; i < N; i++) { x = (i + 0.5) / N; xs.push(x); pr.push(betaPdf(x, P.a, P.b)); lk.push(betaPdf(x, k + 1, n - k + 1)); po.push(betaPdf(x, a, b)); }
+          var top = Math.max.apply(null, po) * 1.15;
+          $("bPlot").innerHTML = plot({ aria: "Prior, likelihood and posterior", xLabel: "θ (fraction of malicious attempts)", yLabel: "density", xName: "θ", dots: false, legend: true, legW: 140, ymin: 0, ymax: top,
+            series: [{ name: "prior", color: "#6c757d", xs: xs, ys: pr, dash: "4 3" }, { name: "likelihood (rescaled)", color: "#198754", xs: xs, ys: lk, dash: "1 3" }, { name: "posterior", color: "#0d6efd", xs: xs, ys: po }] });
+          var w = (P.a + P.b) / (P.a + P.b + n), mean = a / (a + b), lo = betaQ(0.025, a, b), hi = betaQ(0.975, a, b);
+          var map = a > 1 && b > 1 ? ((a - 1) / (a + b - 2)).toFixed(4) : (a <= 1 && b > 1 ? "0 (density peaks at the boundary)" : (b <= 1 && a > 1 ? "1 (density peaks at the boundary)" : "no interior mode"));
+          var ph = k / n, z = 1.96, cen = (ph + (z * z) / (2 * n)) / (1 + (z * z) / n), hf = (z * Math.sqrt((ph * (1 - ph)) / n + (z * z) / (4 * n * n))) / (1 + (z * z) / n);
+          $("bOut").innerHTML = table(["Quantity", "Value"], [
+            ["Prior mean a/(a + b)", p4(P.a / (P.a + P.b))],
+            ["Maximum-likelihood estimate k/n", p4(ph)],
+            ["Posterior Beta(a + k, b + n − k)", "Beta(" + a + ", " + b + ")"],
+            ["Posterior mean", "<strong>" + p4(mean) + "</strong>"],
+            ["Posterior mode (MAP)", map],
+            ["95% credible interval (equal tails)", "[" + p4(lo) + ", " + p4(hi) + "]"],
+            ["Weight of the prior w = (a + b)/(a + b + n)", p4(w)],
+            ["For comparison: Wilson 95% confidence interval", "[" + p4(Math.max(0, cen - hf)) + ", " + p4(Math.min(1, cen + hf)) + "]"]
+          ], "Check: posterior mean = w · prior mean + (1 − w) · MLE = " + p4(w * (P.a / (P.a + P.b)) + (1 - w) * ph) + ".");
+          var rows = [], sizes = [[4, 1], [20, 5], [100, 25], [1000, 250]];
+          PRIORS.forEach(function (Q) {
+            var r = [Q.name];
+            sizes.forEach(function (sz) { r.push(p4((Q.a + sz[1]) / (Q.a + Q.b + sz[0]))); });
+            rows.push(r);
+          });
+          $("bSens").innerHTML = table(["Prior (posterior mean of θ)", "n = 4, k = 1", "n = 20, k = 5", "n = 100, k = 25", "n = 1000, k = 250"], rows,
+            "In all four columns the observed proportion is 25%. With 4 observations the four priors give posterior means from " + p4(Math.min.apply(null, PRIORS.map(function (Q) { return (Q.a + 1) / (Q.a + Q.b + 4); }))) + " to " + p4(Math.max.apply(null, PRIORS.map(function (Q) { return (Q.a + 1) / (Q.a + Q.b + 4); }))) +
+            ": the prior decides. With 1000 observations they all lie between " + p4(Math.min.apply(null, PRIORS.map(function (Q) { return (Q.a + 250) / (Q.a + Q.b + 1000); }))) + " and " + p4(Math.max.apply(null, PRIORS.map(function (Q) { return (Q.a + 250) / (Q.a + Q.b + 1000); }))) + ": the likelihood dominates.");
+        }
+
+        var VOC = [
+          ["free", 60, 4], ["offer", 40, 6], ["click", 50, 8], ["win", 30, 2], ["urgent", 35, 6],
+          ["password", 25, 10], ["invoice", 20, 15], ["meeting", 3, 40], ["report", 5, 35], ["project", 4, 38]
+        ];
+        function renderC() {
+          var err = $("cErr"); err.textContent = "";
+          var pr = num("cPrior") / 100;
+          if (!(pr > 0 && pr < 1)) { err.textContent = "The prior P(spam) must be strictly between 0 and 100 (%)."; return; }
+          var words = {}, tokens = $("cMsg").value.toLowerCase().split(/[^a-z0-9]+/);
+          tokens.forEach(function (t) { if (t) words[t] = 1; });
+          var logodds = Math.log(pr / (1 - pr)), rows = [], tot = logodds;
+          VOC.forEach(function (v) {
+            var ps = (v[1] + 1) / 102, ph = (v[2] + 1) / 102, here = !!words[v[0]], llr = here ? Math.log(ps / ph) : Math.log((1 - ps) / (1 - ph));
+            tot += llr;
+            rows.push([v[0], here ? "present" : "absent", p4(ps), p4(ph), (llr >= 0 ? "+" : "") + llr.toFixed(3)]);
+          });
+          var post = 1 / (1 + Math.exp(-tot));
+          var h = '<div class="alert ' + (post > 0.5 ? "alert-danger" : "alert-success") + ' small mb-2" role="status"><strong>P(spam | message) = ' + pct(post) + "</strong>: prior log-odds " + (Math.log(pr / (1 - pr))).toFixed(3) + " + Σ log-likelihood ratios " + (tot - Math.log(pr / (1 - pr))).toFixed(3) + " = posterior log-odds " + tot.toFixed(3) + ".</div>";
+          h += table(["Word", "in the message", "P(word | spam)", "P(word | ham)", "log-likelihood ratio"], rows, "A positive contribution pushes towards spam, a negative one towards ham; an absent word contributes log((1 − P(w | spam))/(1 − P(w | ham))). The prior enters once, as the starting log-odds.");
+          $("cOut").innerHTML = h;
+        }
+
+        /* ============================== start-up ============================== */
+        $("dSel").innerHTML = Object.keys(DISTS).map(function (k) { return '<option value="' + k + '"' + (k === "exp" ? " selected" : "") + ">" + esc(DISTS[k].name) + "</option>"; }).join("");
+        $("hSel").innerHTML = NS.map(function (n) { return '<option value="' + n + '"' + (n === 30 ? " selected" : "") + ">" + n + "</option>"; }).join("");
+        $("bPrior").innerHTML = PRIORS.map(function (p, i) { return '<option value="' + i + '">' + esc(p.name) + "</option>"; }).join("");
+
+        $("cxSel").addEventListener("change", renderCx);
+        $("cxEps").addEventListener("change", renderCx);
+        $("dSel").addEventListener("change", function () { SIM = simulate($("dSel").value); renderSim(); });
+        $("eIn").addEventListener("change", function () { renderSim(); });
+        $("hSel").addEventListener("change", function () { renderSim(); });
+        $("aGo").addEventListener("click", renderA);
+        $("bGo").addEventListener("click", renderB);
+        $("bPrior").addEventListener("change", renderB);
+        $("cGo").addEventListener("click", renderC);
+
+        renderCx();
+        SIM = simulate($("dSel").value);
+        renderSim();
+        renderDep();
+        renderA();
+        renderB();
+        renderC();
+      })();
+    </script>
+  </body>
+</html>
