@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <title>HW 8 — Correlation and regression</title>
+    <style>
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .viz-svg text {
+        font-family: system-ui, sans-serif;
+      }
+      .chart-box {
+        background: #fff;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+      }
+      .eq {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92rem;
+        background: var(--bs-tertiary-bg);
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        overflow-x: auto;
+      }
+      table.tight td,
+      table.tight th {
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body class="bg-body-secondary">
+    <div class="container-xl py-4">
+      <!-- <a
+        href="../index.html"
+        class="link-secondary link-opacity-75 d-inline-block mb-2"
+        >← Back to the homework list</a
+      > -->
+
+      <header class="mt-3 mb-4">
+        <!-- <p
+          class="text-uppercase text-secondary fw-semibold small mb-1"
+          style="letter-spacing: 0.08em"
+        >
+          HW 8 · Statistics · A.Y. 2026/2027
+        </p> -->
+        <h1 class="display-5">Correlation and Regression</h1>
+        <p class="lead">
+          Least-squares lines, the link r² = b·b′, and why independence implies uncorrelation
+        </p>
+      </header>
+
+      <noscript>
+        <div class="alert alert-warning">This page needs JavaScript to run the experiments.</div>
+      </noscript>
+
+      <!-- ============================ THEORY ============================ -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">1 · Correlation, regression, and how they are related</div>
+        <div class="card-body">
+          <p>
+            For a dataset of pairs (x<sub>i</sub>, y<sub>i</sub>), i = 1, …, n, write x̄ and ȳ for the means and
+          </p>
+          <div class="eq">
+            S<sub>xx</sub> = Σ (x<sub>i</sub> − x̄)², &nbsp;S<sub>yy</sub> = Σ (y<sub>i</sub> − ȳ)², &nbsp;S<sub>xy</sub> = Σ (x<sub>i</sub> − x̄)(y<sub>i</sub> − ȳ)<br />
+            covariance: s<sub>xy</sub> = S<sub>xy</sub>/(n − 1) &nbsp;&nbsp; standard deviations: s<sub>x</sub> = √(S<sub>xx</sub>/(n − 1)), s<sub>y</sub> = √(S<sub>yy</sub>/(n − 1))<br />
+            Pearson correlation: r = S<sub>xy</sub> / √(S<sub>xx</sub> S<sub>yy</sub>) = s<sub>xy</sub> / (s<sub>x</sub> s<sub>y</sub>)
+          </div>
+          <p>
+            The covariance has the units of x times the units of y and its size depends on the scale. The correlation r divides by the two standard deviations: it is dimensionless and always in [−1, 1]
+            (Cauchy–Schwarz: S<sub>xy</sub>² ≤ S<sub>xx</sub> S<sub>yy</sub>). It measures <em>linear</em> association: r = ±1 exactly when all points lie on a line, and r = 0 means no linear trend, not
+            no relationship. A correlation says nothing about causation.
+          </p>
+
+          <h2 class="h6 mt-4">The regression problem: finding a and b</h2>
+          <p>
+            Regression of y on x looks for the line ŷ = a + b x that minimises the sum of squared vertical errors
+          </p>
+          <div class="eq">S(a, b) = Σ (y<sub>i</sub> − a − b x<sub>i</sub>)²</div>
+          <p>Set the two partial derivatives to zero (the <em>normal equations</em>):</p>
+          <div class="eq">
+            ∂S/∂a = −2 Σ (y<sub>i</sub> − a − b x<sub>i</sub>) = 0 &nbsp;⇒&nbsp; a = ȳ − b x̄ &nbsp;&nbsp;(the line passes through the point of means)<br />
+            ∂S/∂b = −2 Σ x<sub>i</sub> (y<sub>i</sub> − a − b x<sub>i</sub>) = 0 &nbsp;⇒&nbsp; substituting a: &nbsp;b Σ (x<sub>i</sub> − x̄)² = Σ (x<sub>i</sub> − x̄)(y<sub>i</sub> − ȳ)<br />
+            <strong>b = S<sub>xy</sub> / S<sub>xx</sub> = r · s<sub>y</sub>/s<sub>x</sub>, &nbsp;a = ȳ − b x̄</strong>
+          </div>
+          <p class="small">
+            The critical point is a minimum: the Hessian of S is 2·[[n, Σx], [Σx, Σx²]], whose determinant is 4n·S<sub>xx</sub> &gt; 0 when the x<sub>i</sub> are not all equal. The slope has the sign of r, and
+            the residuals e<sub>i</sub> = y<sub>i</sub> − a − b x<sub>i</sub> satisfy Σ e<sub>i</sub> = 0 and Σ x<sub>i</sub> e<sub>i</sub> = 0 (the normal equations themselves).
+          </p>
+          <p>
+            Exchanging the roles of the variables gives the regression of x on y, x̂ = a′ + b′ y, with
+          </p>
+          <div class="eq"><strong>b′ = S<sub>xy</sub> / S<sub>yy</sub> = r · s<sub>x</sub>/s<sub>y</sub>, &nbsp;a′ = x̄ − b′ ȳ</strong></div>
+          <p>These are <em>two different lines</em> (the first minimises vertical errors, the second horizontal ones). They always cross at (x̄, ȳ). Multiplying the two slopes:</p>
+          <div class="eq">
+            b · b′ = (S<sub>xy</sub>/S<sub>xx</sub>) · (S<sub>xy</sub>/S<sub>yy</sub>) = S<sub>xy</sub>² / (S<sub>xx</sub> S<sub>yy</sub>) = r²<br />
+            ⇒ &nbsp;<strong>r = ± √(b · b′)</strong>, &nbsp;with the sign common to b and b′ (the sign of S<sub>xy</sub>)
+          </div>
+          <p>
+            So |r| is the geometric mean of the two regression coefficients. Two consequences: b and b′ always have the same sign, and since |r| ≤ 1 we get |b·b′| ≤ 1; the two lines coincide only if |r| = 1, and they get further apart
+            as r approaches 0 (for r = 0 they are the horizontal line y = ȳ and the vertical line x = x̄). The coefficient of determination r² = b·b′ is also the fraction of the variance of y explained by the line:
+            Σ (y<sub>i</sub> − ȳ)² = Σ (ŷ<sub>i</sub> − ȳ)² + Σ e<sub>i</sub>², with Σ (ŷ<sub>i</sub> − ȳ)² = r² S<sub>yy</sub>.
+          </p>
+
+          <h2 class="h6 mt-4">Independence implies uncorrelation</h2>
+          <p>
+            <strong>Claim.</strong> If X and Y are independent random variables with finite variances, then Cov(X, Y) = 0 and hence ρ(X, Y) = 0.
+          </p>
+          <p>
+            <strong>Proof.</strong> Independence means that the joint law factorises, f(x, y) = f<sub>X</sub>(x) f<sub>Y</sub>(y) (sums instead of integrals in the discrete case). Then
+          </p>
+          <div class="eq">
+            E[XY] = ∬ x y f<sub>X</sub>(x) f<sub>Y</sub>(y) dx dy = ( ∫ x f<sub>X</sub>(x) dx ) ( ∫ y f<sub>Y</sub>(y) dy ) = E[X] E[Y]<br />
+            Cov(X, Y) = E[XY] − E[X] E[Y] = 0 &nbsp;⇒&nbsp; ρ = Cov(X, Y)/(σ<sub>X</sub> σ<sub>Y</sub>) = 0 &nbsp;(when σ<sub>X</sub>, σ<sub>Y</sub> &gt; 0) &nbsp;∎
+          </div>
+          <p>
+            <strong>The converse is false.</strong> Let X be symmetric around 0 (for example X ~ N(0, 1)) and Y = X². Then E[X] = 0 and E[XY] = E[X³] = 0 (odd moment of a symmetric law), so Cov(X, Y) = E[XY] − E[X]E[Y] = 0:
+            uncorrelated. But Y is a function of X, hence completely dependent: P(Y &gt; 1 | X &gt; 1) = 1 while P(Y &gt; 1) = P(|X| &gt; 1) ≈ 0.317. Uncorrelation is only the absence of a <em>linear</em> trend; independence
+            is the absence of any relationship. The two are equivalent in the special case of a jointly Gaussian pair (X, Y). The experiment below shows both cases.
+          </p>
+        </div>
+      </section>
+
+      <!-- ============================ EXPERIMENT 1 ============================ -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">2 · Any dataset: both regression lines and the check r = ± √(b · b′)</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-12 col-md-5 col-lg-4">
+              <label for="dsSel" class="form-label">Dataset</label>
+              <select id="dsSel" class="form-select">
+                <option value="a1">Anscombe I (linear, noisy)</option>
+                <option value="a2">Anscombe II (curved)</option>
+                <option value="a3">Anscombe III (one outlier)</option>
+                <option value="sim">Simulated bivariate normal</option>
+                <option value="cust">Custom data</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2 sim-only">
+              <label for="simN" class="form-label">n</label>
+              <input id="simN" type="number" min="3" max="5000" step="1" value="200" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2 sim-only">
+              <label for="simR" class="form-label">target ρ</label>
+              <input id="simR" type="text" value="0.7" class="form-control mono" />
+            </div>
+            <div class="col-12 col-md-3 col-lg-2">
+              <button id="runBtn" type="button" class="btn btn-secondary w-100">Compute</button>
+            </div>
+          </div>
+          <div id="custBox" class="mb-2" style="display: none">
+            <label for="custTa" class="form-label">One pair per line, “x, y” (comma, semicolon, space or tab), at least 3 points</label>
+            <textarea id="custTa" rows="6" class="form-control mono">1, 2.1
+2, 3.9
+3, 6.2
+4, 7.8
+5, 10.1
+6, 12.2</textarea>
+          </div>
+          <div id="dsErr" class="text-danger small mb-2" role="alert"></div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+              <div class="chart-box" id="scatterOut"></div>
+              <div class="small text-secondary mt-1">Blue: regression of y on x (minimises vertical errors). Orange: regression of x on y (minimises horizontal errors). They cross at the point of means.</div>
+            </div>
+            <div class="col-lg-6">
+              <div id="statsOut"></div>
+            </div>
+          </div>
+          <div class="small fw-semibold mb-1">The check: r from the two regression coefficients</div>
+          <div id="checkOut" class="mb-3"></div>
+          <div class="small fw-semibold mb-1">Why (a, b) is the minimum: squared error of the fitted line against perturbed lines</div>
+          <div id="sseOut" class="mb-3"></div>
+
+          <div class="small fw-semibold mb-1">Python code for the same computation</div>
+<pre class="p-3 bg-body-tertiary border rounded small mono mb-2"><code>import numpy as np
+
+def regress(x, y):
+    x, y = np.asarray(x, float), np.asarray(y, float)
+    dx, dy = x - x.mean(), y - y.mean()
+    sxx, syy, sxy = dx @ dx, dy @ dy, dx @ dy
+    b  = sxy / sxx;  a  = y.mean() - b  * x.mean()     # y on x
+    b2 = sxy / syy;  a2 = x.mean() - b2 * y.mean()     # x on y
+    r  = sxy / np.sqrt(sxx * syy)
+    return a, b, a2, b2, r
+
+a, b, a2, b2, r = regress(x, y)
+print(r, np.sign(b) * np.sqrt(b * b2))                  # equal
+print(np.corrcoef(x, y)[0, 1])                          # numpy agrees</code></pre>
+        </div>
+      </section>
+
+      <!-- ============================ EXPERIMENT 2 ============================ -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">3 · Independence ⇒ uncorrelation, and the failure of the converse</div>
+        <div class="card-body">
+          <p class="small">
+            Each panel simulates n pairs (seeded) with X ~ N(0, 1). In the first Y is drawn independently of X; in the second Y = X² (fully dependent on X); in the third Y = X + noise (linearly dependent). The sample correlation
+            r is computed and compared with the 95% range that the sample correlation of independent pairs would have (about ±1.96/√n).
+          </p>
+          <div class="row g-3 align-items-end mb-2">
+            <div class="col-6 col-md-3 col-lg-2">
+              <label for="indN" class="form-label">n</label>
+              <input id="indN" type="number" min="10" max="20000" step="1" value="1000" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <button id="indBtn" type="button" class="btn btn-secondary w-100">Simulate</button>
+            </div>
+          </div>
+          <div id="indErr" class="text-danger small mb-2" role="alert"></div>
+          <div class="row g-3" id="indOut"></div>
+          <div id="indTable" class="mt-3"></div>
+        </div>
+      </section>
+
+      <!-- ============================ CONCLUSIONS ============================ -->
+      <section class="card mb-4">
+        <div class="card-header fw-semibold">4 · Conclusions</div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>The least-squares line of y on x is ŷ = a + b x with b = S<sub>xy</sub>/S<sub>xx</sub> = r s<sub>y</sub>/s<sub>x</sub> and a = ȳ − b x̄; the line of x on y has slope b′ = S<sub>xy</sub>/S<sub>yy</sub>. They are different lines through (x̄, ȳ).</li>
+            <li>b · b′ = r², so |r| = √(b · b′), the geometric mean of the two coefficients, with the sign of the covariance. The experiment confirms it to machine precision on every dataset.</li>
+            <li>The Anscombe datasets have (almost) the same r, means and lines but very different shapes: r and the regression line must always be read together with the scatter plot.</li>
+            <li>Independence ⇒ Cov = 0 by factorisation of the expectation, but uncorrelated variables can be strongly dependent (Y = X²); only the Gaussian case gives the equivalence.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <footer class="py-3 my-4">
+      <p class="text-center text-body-secondary">© 2026 Giorgio N.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var $ = function (id) { return document.getElementById(id); };
+
+        /* ---------------- helpers ---------------- */
+        function rng(seed) {
+          var a = seed >>> 0;
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            var t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        function gauss(r) {
+          var u = 1 - r(), v = r();
+          return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+        function f4(v) { return Math.abs(v) < 1e-4 && v !== 0 ? v.toExponential(2) : v.toFixed(4); }
+        function ex(v) { return v === 0 ? "0" : v.toExponential(2); }
+        function niceTicks(lo, hi, cnt) {
+          var raw = (hi - lo) / cnt, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+          var step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag, out = [], v = Math.ceil(lo / step - 1e-9) * step;
+          for (; v <= hi + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : parseFloat(v.toPrecision(10)));
+          return out;
+        }
+        function table(head, rows, small) {
+          var h = '<div class="table-responsive"><table class="table table-sm table-striped small mb-0 tight"><thead><tr>';
+          head.forEach(function (c) { h += "<th>" + c + "</th>"; });
+          h += "</tr></thead><tbody>";
+          rows.forEach(function (r) {
+            h += "<tr>";
+            r.forEach(function (c, i) { h += (i === 0 ? "<td>" : '<td class="mono">') + c + "</td>"; });
+            h += "</tr>";
+          });
+          return h + "</tbody></table></div>" + (small ? '<p class="small text-secondary mt-2 mb-0">' + small + "</p>" : "");
+        }
+
+        /* ---------------- core computation ---------------- */
+        function analyse(x, y) {
+          var n = x.length, i, mx = 0, my = 0;
+          for (i = 0; i < n; i++) { mx += x[i]; my += y[i]; }
+          mx /= n; my /= n;
+          var sxx = 0, syy = 0, sxy = 0, dx, dy;
+          for (i = 0; i < n; i++) { dx = x[i] - mx; dy = y[i] - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+          var res = { n: n, mx: mx, my: my, sxx: sxx, syy: syy, sxy: sxy };
+          res.sx = Math.sqrt(sxx / (n - 1)); res.sy = Math.sqrt(syy / (n - 1)); res.cov = sxy / (n - 1);
+          res.r = sxy / Math.sqrt(sxx * syy);
+          res.b = sxy / sxx; res.a = my - res.b * mx;
+          res.b2 = sxy / syy; res.a2 = mx - res.b2 * my;
+          return res;
+        }
+        function sse(x, y, a, b) { var s = 0, i, e; for (i = 0; i < x.length; i++) { e = y[i] - a - b * x[i]; s += e * e; } return s; }
+
+        /* ---------------- datasets ---------------- */
+        var AX = [10, 8, 13, 9, 11, 14, 6, 4, 12, 7, 5];
+        var DATA = {
+          a1: { x: AX, y: [8.04, 6.95, 7.58, 8.81, 8.33, 9.96, 7.24, 4.26, 10.84, 4.82, 5.68] },
+          a2: { x: AX, y: [9.14, 8.14, 8.74, 8.77, 9.26, 8.1, 6.13, 3.1, 9.13, 7.26, 4.74] },
+          a3: { x: AX, y: [7.46, 6.77, 12.74, 7.11, 7.81, 8.84, 6.08, 5.39, 8.15, 6.42, 5.73] }
+        };
+
+        function parseCustom(text) {
+          var lines = text.split(/\r?\n/), x = [], y = [], i, p;
+          for (i = 0; i < lines.length; i++) {
+            var ln = lines[i].trim();
+            if (!ln) continue;
+            p = ln.split(/[\s,;]+/).filter(function (t) { return t.length; });
+            if (p.length !== 2) return { err: "Line " + (i + 1) + ": expected exactly two numbers." };
+            var a = Number(p[0].replace(",", ".")), b = Number(p[1].replace(",", "."));
+            if (!isFinite(a) || !isFinite(b)) return { err: "Line " + (i + 1) + ": not a valid number." };
+            x.push(a); y.push(b);
+          }
+          if (x.length < 3) return { err: "At least 3 points are needed." };
+          if (x.length > 20000) return { err: "At most 20000 points." };
+          return { x: x, y: y };
+        }
+        function simData(n, rho) {
+          var r = rng(8), x = [], y = [], i, z1, z2;
+          for (i = 0; i < n; i++) {
+            z1 = gauss(r); z2 = gauss(r);
+            x.push(50 + 10 * z1);
+            y.push(100 + 15 * (rho * z1 + Math.sqrt(1 - rho * rho) * z2));
+          }
+          return { x: x, y: y };
+        }
+
+        /* ---------------- scatter plot ---------------- */
+        function scatter(x, y, R, aria) {
+          var W = 560, H = 340, ml = 50, mr = 14, mt = 12, mb = 42, iw = W - ml - mr, ih = H - mt - mb, i;
+          var xl = Infinity, xh = -Infinity, yl = Infinity, yh = -Infinity;
+          for (i = 0; i < x.length; i++) { xl = Math.min(xl, x[i]); xh = Math.max(xh, x[i]); yl = Math.min(yl, y[i]); yh = Math.max(yh, y[i]); }
+          var px = (xh - xl) * 0.08 || 1, py = (yh - yl) * 0.08 || 1;
+          xl -= px; xh += px; yl -= py; yh += py;
+          function X(v) { return ml + ((v - xl) / (xh - xl)) * iw; }
+          function Y(v) { return mt + ih - ((v - yl) / (yh - yl)) * ih; }
+          var s = '<svg viewBox="0 0 ' + W + " " + H + '" class="w-100 viz-svg" role="img" aria-label="' + aria + '"><defs><clipPath id="clipS"><rect x="' + ml + '" y="' + mt + '" width="' + iw + '" height="' + ih + '"/></clipPath></defs>';
+          niceTicks(yl, yh, 5).forEach(function (v) {
+            s += '<line x1="' + ml + '" y1="' + Y(v) + '" x2="' + (ml + iw) + '" y2="' + Y(v) + '" stroke="#e9ecef"/><text x="' + (ml - 5) + '" y="' + (Y(v) + 3) + '" font-size="10" text-anchor="end" fill="#495057">' + v + "</text>";
+          });
+          niceTicks(xl, xh, 6).forEach(function (v) {
+            s += '<line x1="' + X(v) + '" y1="' + (mt + ih) + '" x2="' + X(v) + '" y2="' + (mt + ih + 4) + '" stroke="#6c757d"/><text x="' + X(v) + '" y="' + (mt + ih + 15) + '" font-size="10" text-anchor="middle" fill="#495057">' + v + "</text>";
+          });
+          s += '<line x1="' + ml + '" y1="' + (mt + ih) + '" x2="' + (ml + iw) + '" y2="' + (mt + ih) + '" stroke="#6c757d"/><line x1="' + ml + '" y1="' + mt + '" x2="' + ml + '" y2="' + (mt + ih) + '" stroke="#6c757d"/>';
+          var rad = x.length > 500 ? 1.6 : 3.2, op = x.length > 500 ? 0.45 : 0.9;
+          s += '<g clip-path="url(#clipS)">';
+          if (R) {
+            /* y on x: y = a + b x ; x on y: y = (x - a2) / b2 */
+            s += '<line x1="' + X(xl) + '" y1="' + Y(R.a + R.b * xl) + '" x2="' + X(xh) + '" y2="' + Y(R.a + R.b * xh) + '" stroke="#0d6efd" stroke-width="2"/>';
+            if (R.b2 !== 0) s += '<line x1="' + X(xl) + '" y1="' + Y((xl - R.a2) / R.b2) + '" x2="' + X(xh) + '" y2="' + Y((xh - R.a2) / R.b2) + '" stroke="#fd7e14" stroke-width="2"/>';
+          }
+          for (i = 0; i < x.length; i++) s += '<circle cx="' + X(x[i]).toFixed(1) + '" cy="' + Y(y[i]).toFixed(1) + '" r="' + rad + '" fill="#495057" fill-opacity="' + op + '"/>';
+          if (R) s += '<circle cx="' + X(R.mx) + '" cy="' + Y(R.my) + '" r="5" fill="none" stroke="#b02a37" stroke-width="2"><title>point of means</title></circle>';
+          s += "</g>";
+          s += '<text x="' + (ml + iw / 2) + '" y="' + (H - 6) + '" font-size="11" text-anchor="middle" fill="#495057">x</text>';
+          s += '<text transform="translate(12 ' + (mt + ih / 2) + ') rotate(-90)" font-size="11" text-anchor="middle" fill="#495057">y</text>';
+          return s + "</svg>";
+        }
+
+        /* ---------------- experiment 1 ---------------- */
+        function run() {
+          var key = $("dsSel").value, d, err = $("dsErr");
+          err.textContent = "";
+          document.querySelectorAll(".sim-only").forEach(function (e) { e.style.display = key === "sim" ? "" : "none"; });
+          $("custBox").style.display = key === "cust" ? "" : "none";
+          if (key === "sim") {
+            var n = Number($("simN").value), rho = Number(String($("simR").value).trim().replace(",", "."));
+            if (!Number.isInteger(n) || n < 3 || n > 5000) { err.textContent = "n must be an integer between 3 and 5000."; return; }
+            if (!isFinite(rho) || rho < -0.999 || rho > 0.999) { err.textContent = "ρ must be a number in [−0.999, 0.999]."; return; }
+            d = simData(n, rho);
+          } else if (key === "cust") {
+            d = parseCustom($("custTa").value);
+            if (d.err) { err.textContent = d.err; return; }
+          } else d = DATA[key];
+          var R = analyse(d.x, d.y);
+          if (!(R.sxx > 0)) { err.textContent = "All x values are equal: the regression of y on x is not defined (S_xx = 0)."; return; }
+          if (!(R.syy > 0)) { err.textContent = "All y values are equal: the regression of x on y is not defined (S_yy = 0)."; return; }
+          $("scatterOut").innerHTML = scatter(d.x, d.y, R, "Scatter plot with the two regression lines");
+          $("statsOut").innerHTML = table(["Quantity", "Value"], [
+            ["n", R.n],
+            ["x̄, ȳ", f4(R.mx) + ", " + f4(R.my)],
+            ["s<sub>x</sub>, s<sub>y</sub>", f4(R.sx) + ", " + f4(R.sy)],
+            ["S<sub>xx</sub>, S<sub>yy</sub>, S<sub>xy</sub>", f4(R.sxx) + ", " + f4(R.syy) + ", " + f4(R.sxy)],
+            ["Covariance s<sub>xy</sub>", f4(R.cov)],
+            ["Correlation r = S<sub>xy</sub>/√(S<sub>xx</sub>S<sub>yy</sub>)", "<strong>" + f4(R.r) + "</strong>"],
+            ["r² (variance of y explained)", f4(R.r * R.r)],
+            ["y on x: slope b = S<sub>xy</sub>/S<sub>xx</sub>", f4(R.b)],
+            ["y on x: intercept a = ȳ − b x̄", f4(R.a)],
+            ["Line 1", "y = " + f4(R.a) + " " + (R.b >= 0 ? "+" : "−") + " " + f4(Math.abs(R.b)) + " x"],
+            ["x on y: slope b′ = S<sub>xy</sub>/S<sub>yy</sub>", f4(R.b2)],
+            ["x on y: intercept a′ = x̄ − b′ ȳ", f4(R.a2)],
+            ["Line 2", "x = " + f4(R.a2) + " " + (R.b2 >= 0 ? "+" : "−") + " " + f4(Math.abs(R.b2)) + " y"]
+          ]);
+          var prod = R.b * R.b2, geo = Math.sign(R.b) * Math.sqrt(prod), alt1 = R.b * R.sx / R.sy, alt2 = R.b2 * R.sy / R.sx;
+          $("checkOut").innerHTML = table(["Quantity", "Value"], [
+            ["b · b′", f4(prod)],
+            ["r²", f4(R.r * R.r)],
+            ["sign(b) · √(b · b′)", f4(geo)],
+            ["r (from the definition)", f4(R.r)],
+            ["|difference|", ex(Math.abs(geo - R.r))],
+            ["b · s<sub>x</sub>/s<sub>y</sub> (should equal r)", f4(alt1)],
+            ["b′ · s<sub>y</sub>/s<sub>x</sub> (should equal r)", f4(alt2)],
+            ["b and b′ have the same sign", (R.b > 0) === (R.b2 > 0) || (R.b === 0 && R.b2 === 0) ? "yes" : "no"]
+          ], "The geometric mean of the two regression coefficients reproduces the correlation coefficient, with the common sign of the slopes. The last two rows show the equivalent forms b = r s<sub>y</sub>/s<sub>x</sub> and b′ = r s<sub>x</sub>/s<sub>y</sub>.");
+          var s0 = sse(d.x, d.y, R.a, R.b), dl = 0.1 * (R.sy / R.sx || 1), rows = [
+            ["(a, b), the least-squares fit", f4(s0), "—"],
+            ["(a + 0.5, b)", f4(sse(d.x, d.y, R.a + 0.5, R.b)), "+" + f4(sse(d.x, d.y, R.a + 0.5, R.b) - s0)],
+            ["(a − 0.5, b)", f4(sse(d.x, d.y, R.a - 0.5, R.b)), "+" + f4(sse(d.x, d.y, R.a - 0.5, R.b) - s0)],
+            ["(a, b + " + f4(dl) + ")", f4(sse(d.x, d.y, R.a, R.b + dl)), "+" + f4(sse(d.x, d.y, R.a, R.b + dl) - s0)],
+            ["(a, b − " + f4(dl) + ")", f4(sse(d.x, d.y, R.a, R.b - dl)), "+" + f4(sse(d.x, d.y, R.a, R.b - dl) - s0)],
+            ["SSE of the line with slope b′⁻¹ (line 2 used as a predictor of y)", f4(sse(d.x, d.y, -R.a2 / R.b2, 1 / R.b2)), "+" + f4(sse(d.x, d.y, -R.a2 / R.b2, 1 / R.b2) - s0)]
+          ];
+          var res = 0, rx = 0, i, e;
+          for (i = 0; i < d.x.length; i++) { e = d.y[i] - R.a - R.b * d.x[i]; res += e; rx += d.x[i] * e; }
+          $("sseOut").innerHTML = table(["Line (a, b)", "SSE = Σ (y − a − bx)²", "increase over the fit"], rows,
+            "Every perturbation increases the error, as the second-order condition predicts. Normal equations at the solution: Σ e<sub>i</sub> = " + ex(res) + " and Σ x<sub>i</sub> e<sub>i</sub> = " + ex(rx) + " (zero up to rounding). SSE(a, b) = (1 − r²) S<sub>yy</sub> = " + f4((1 - R.r * R.r) * R.syy) + ".");
+        }
+
+        /* ---------------- experiment 2 ---------------- */
+        function runInd() {
+          var err = $("indErr"); err.textContent = "";
+          var n = Number($("indN").value);
+          if (!Number.isInteger(n) || n < 10 || n > 20000) { err.textContent = "n must be an integer between 10 and 20000."; return; }
+          var r = rng(99), x = [], yI = [], yQ = [], yL = [], i, v;
+          for (i = 0; i < n; i++) { v = gauss(r); x.push(v); yI.push(gauss(r)); yQ.push(v * v); yL.push(v + 0.5 * gauss(r)); }
+          var cases = [
+            { name: "Independent: Y ~ N(0, 1) drawn separately", y: yI },
+            { name: "Dependent but uncorrelated: Y = X²", y: yQ },
+            { name: "Dependent and correlated: Y = X + 0.5·noise", y: yL }
+          ], out = "", rows = [], band = 1.96 / Math.sqrt(n);
+          cases.forEach(function (c) {
+            var R = analyse(x, c.y);
+            out += '<div class="col-lg-4"><div class="small fw-semibold mb-1">' + c.name + '</div><div class="chart-box">' + scatter(x.slice(0, 600), c.y.slice(0, 600), null, c.name) + '</div></div>';
+            rows.push([c.name, f4(R.r), Math.abs(R.r) <= band ? "inside" : "outside", f4(R.b), f4(R.b2)]);
+          });
+          $("indOut").innerHTML = out;
+          $("indTable").innerHTML = table(["Case", "sample r", "within ±1.96/√n = ±" + band.toFixed(4) + "?", "b (y on x)", "b′ (x on y)"], rows,
+            "Plots show the first 600 points. Independent pairs and the pairs with Y = X² both have r ≈ 0: the correlation cannot tell them apart, although in the second case Y is a function of X. " +
+            "For Y = X² the exact covariance is E[X³] − E[X]E[X²] = 0, so the sample r only fluctuates around 0 (the sample is not exactly symmetric).");
+        }
+
+        $("dsSel").addEventListener("change", run);
+        $("runBtn").addEventListener("click", run);
+        $("indBtn").addEventListener("click", runInd);
+        run();
+        runInd();
+      })();
+    </script>
+  </body>
+</html>
